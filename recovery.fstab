@@ -19,3 +19,4 @@ mi_ext /mi_ext ext4 ro wait,slotselect,logical
 /dev/block/bootdevice/by-name/persist /persist ext4 noatime,nosuid,nodev wait
 /dev/block/bootdevice/by-name/rescue /cache ext4 nosuid,nodev wait
 # Boot control and bootloader_message resolve misc through ReadDefaultFstab.
+/dev/block/by-name/misc /misc emmc defaults defaults
