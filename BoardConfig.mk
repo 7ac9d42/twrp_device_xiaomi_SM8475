@@ -76,6 +76,9 @@ TARGET_USES_LOGD := true
 TWRP_INCLUDE_LOGCAT := true
 -include $(DEVICE_PATH)/firmware-version.mk
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/recovery/root/vendor/etc/vintf/manifest.xml
+# Real cgroup runtime in the recovery ramdisk.
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(TARGET_RECOVERY_ROOT_OUT)/system/lib64/libcgrouprc.so
+
 TW_LOAD_VENDOR_BOOT_MODULES := true
 # Explicit closure for upstream lpdump/lpdumpd ramdisk packaging.
 TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libfs_mgr_binder.so

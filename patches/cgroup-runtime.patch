@@ -1,0 +1,12 @@
+diff --git a/libprocessgroup/cgrouprc/Android.bp b/libprocessgroup/cgrouprc/Android.bp
+index d5214c1..dd2b1c4 100644
+--- a/libprocessgroup/cgrouprc/Android.bp
++++ b/libprocessgroup/cgrouprc/Android.bp
+@@ -18,6 +18,7 @@ package {
+ 
+ cc_library {
+     name: "libcgrouprc",
++    recovery_available: true,
+     // Do not ever mark this as vendor_available; otherwise, vendor modules
+     // that links to the static library will behave unexpectedly. All on-device
+     // modules should use libprocessgroup which links to the LL-NDK library

@@ -1,0 +1,6 @@
+{
+  "project": "system/core",
+  "base_commit": "b6e6bf192be2c4341d5dac41ccfa634d2d684816",
+  "license": "Apache-2.0",
+  "patch": "cgroup-runtime.patch"
+}

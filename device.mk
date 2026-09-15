@@ -6,6 +6,8 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 $(call inherit-product, vendor/twrp/config/common.mk)
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
+# Real LLNDK implementations; SDK stubs are never installed.
+PRODUCT_PACKAGES += libvndksupport.recovery libcgrouprc.recovery
 PRODUCT_SHIPPING_API_LEVEL := 31
 PRODUCT_SOONG_NAMESPACES += $(DEVICE_PATH) hardware/qcom-caf/bootctrl
 PRODUCT_PACKAGES += bootctrl.taro.recovery android.hardware.boot@1.2-impl-qti.recovery
