@@ -1,0 +1,18 @@
+{
+  "source_firmware": "OS4.0.0.129.XMYCNXM",
+  "source_partition": "vendor_a",
+  "files": {
+    "novatek_nt36532_m81_fw_tm.bin": {
+      "vendor_source": "/firmware/novatek_nt36532_m81_fw_tm.bin",
+      "ramdisk_path": "lib/firmware/novatek_nt36532_m81_fw_tm.bin",
+      "bytes": 245760,
+      "sha256": "3d9737da5e0fc3ea64e340c495067d4d6dcbd5ca2a2351fe955ec88fab35da1e"
+    },
+    "novatek_nt36532_m81_fw_csot.bin": {
+      "vendor_source": "/firmware/novatek_nt36532_m81_fw_csot.bin",
+      "ramdisk_path": "lib/firmware/novatek_nt36532_m81_fw_csot.bin",
+      "bytes": 245760,
+      "sha256": "2582cf81d6eeb69b57cb8b18b2afe683e9cd7e20ed0be390e14ed75302b0c584"
+    }
+  }
+}
