@@ -1,0 +1,20 @@
+diff --git a/guest_state_accessor/Android.bp b/guest_state_accessor/Android.bp
+index ba895c9..e31a8c2 100644
+--- a/guest_state_accessor/Android.bp
++++ b/guest_state_accessor/Android.bp
+@@ -20,6 +20,7 @@ package {
+ 
+ cc_library_headers {
+     name: "libnative_bridge_support_accessor_headers",
++    recovery_available: true,
+     defaults: ["native_bridge_support_defaults"],
+     host_supported: true,
+     export_include_dirs: ["include"],
+@@ -31,6 +32,7 @@ cc_library_headers {
+ 
+ cc_library_static {
+     name: "libnative_bridge_guest_state_accessor",
++    recovery_available: true,
+     defaults: ["native_bridge_support_defaults"],
+     host_supported: true,
+     header_libs: [

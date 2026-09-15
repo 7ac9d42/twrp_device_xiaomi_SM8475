@@ -1,0 +1,6 @@
+{
+  "project": "frameworks/libs/native_bridge_support",
+  "base_commit": "b527289974e3883460370012325ab3736d59268a",
+  "license": "Apache-2.0",
+  "patch": "native-accessor.patch"
+}

@@ -20,3 +20,6 @@ PRODUCT_BUILD_RECOVERY_IMAGE := true
 # Recovery-only build; retain the real mi_ext layout without generating super images.
 PRODUCT_BUILD_SUPER_PARTITION := false
 PRODUCT_BUILD_SUPER_EMPTY_IMAGE := false
+
+# Native diagnostics are independent of HAL runtime compatibility.
+PRODUCT_PACKAGES += crash_dump.recovery

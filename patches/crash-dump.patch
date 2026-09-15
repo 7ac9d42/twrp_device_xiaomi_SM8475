@@ -1,0 +1,20 @@
+diff --git a/debuggerd/Android.bp b/debuggerd/Android.bp
+index 0e62ceb..26e818f 100644
+--- a/debuggerd/Android.bp
++++ b/debuggerd/Android.bp
+@@ -437,6 +437,7 @@ cc_benchmark {
+ 
+ cc_binary {
+     name: "crash_dump",
++    recovery_available: true,
+     srcs: [
+         "crash_dump.cpp",
+         "tombstone_handler.cpp",
+@@ -548,6 +549,7 @@ cc_binary {
+ 
+ prebuilt_etc {
+     name: "crash_dump.policy",
++    recovery_available: true,
+     sub_dir: "seccomp_policy",
+     filename_from_src: true,
+     arch: {
