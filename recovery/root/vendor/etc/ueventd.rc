@@ -4,3 +4,6 @@
 /dev/dma_heap/system 0660 system system
 /dev/dma_heap/qcom,qseecom 0660 system drmrpc
 /dev/input/* 0660 root input
+
+# Target vendor UFS RPMB ownership (QSEE drops to system).
+/dev/0:0:0:49476 0600 system system
