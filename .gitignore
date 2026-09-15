@@ -25,3 +25,34 @@ __pycache__/
 .idea/
 .vscode/
 *~
+
+# Additional local build products, archives and diagnostics
+/diagnostics/
+/backups/
+*.so
+*.o
+*.a
+*.bin
+*.elf
+*.exe
+*.dll
+*.7z
+*.rar
+*.tgz
+*.gz
+*.xz
+*.zst
+*.bundle
+*.bak
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Credentials (the public X.509 verification certificate remains tracked)
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+id_ecdsa
+id_dsa
