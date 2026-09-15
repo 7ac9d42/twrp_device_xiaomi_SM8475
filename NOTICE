@@ -5,9 +5,8 @@ Project, The Linux Foundation / Qualcomm, LineageOS, ymdzq and the EROFS
 authors. Their work makes this device integration possible. Attribution does
 not imply endorsement.
 
-This repository is a collection of differently licensed files, NOT a blanket
-MIT relicensing of upstream code. LICENSE applies only to original work
-identified as MIT. Existing copyright and license notices remain effective.
+This repository uses per-file licensing. LICENSE applies to original work
+identified as MIT. Upstream files retain their copyright and license notices.
 See docs/LICENSING.md and docs/UPSTREAM.md for scope and exact revisions.
 
 TWRP module-loader patch: GPL-3.0-or-later (see upstream NOTICE).
