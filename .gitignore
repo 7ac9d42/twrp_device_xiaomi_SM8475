@@ -1,0 +1,27 @@
+# Local firmware payloads: reconstruct with tools/extract-files.py
+/recovery/root/vendor/bin/
+/recovery/root/vendor/lib64/
+/recovery/root/lib/firmware/
+/.cache/
+/out/
+/artifacts/
+/logs/
+/firmware-reference/
+/.repo/
+/.ccache/
+__pycache__/
+*.py[cod]
+*.img
+*.zip
+*.tar
+*.tar.gz
+*.log
+*.sqlite*
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+.idea/
+.vscode/
+*~

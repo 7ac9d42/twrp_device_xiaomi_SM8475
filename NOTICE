@@ -1,0 +1,21 @@
+twrp_device_xiaomi_SM8475 — only liuqin tested
+
+Thank you to Team Win, Dees_Troy, bigbiff, TWRP-Test, the Android Open Source
+Project, The Linux Foundation / Qualcomm, LineageOS, ymdzq and the EROFS
+authors. Their work makes this device integration possible. Attribution does
+not imply endorsement.
+
+This repository is a collection of differently licensed files, NOT a blanket
+MIT relicensing of upstream code. LICENSE applies only to original work
+identified as MIT. Existing copyright and license notices remain effective.
+See docs/LICENSING.md and docs/UPSTREAM.md for scope and exact revisions.
+
+TWRP module-loader patch: GPL-3.0-or-later (see upstream NOTICE).
+AOSP build/configuration patches and inherited service code: Apache-2.0.
+gpt-utils and Qualcomm USB init: original BSD three-clause notices.
+tools/erofs_read.c: GPL-2.0-or-later; liberofs retains its own license.
+Original tooling and documentation: MIT, unless separately identified.
+Firmware, proprietary services, hardware libraries and touch firmware are
+not distributed here and are not licensed by this repository.
+security/miui_releasekey.x509.pem is a public verification certificate, not
+a private signing key; its bytes are supplied as verification data only.
