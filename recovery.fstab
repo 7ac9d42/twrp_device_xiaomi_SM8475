@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+# Target firmware: OS4.0.0.129.XMYCNXM
+system /system erofs ro wait,slotselect,logical
+system /system ext4 ro wait,slotselect,logical
+system_ext /system_ext erofs ro wait,slotselect,logical
+system_ext /system_ext ext4 ro wait,slotselect,logical
+product /product erofs ro wait,slotselect,logical
+product /product ext4 ro wait,slotselect,logical
+vendor /vendor erofs ro wait,slotselect,logical
+vendor /vendor ext4 ro wait,slotselect,logical
+vendor_dlkm /vendor_dlkm erofs ro wait,slotselect,logical
+vendor_dlkm /vendor_dlkm ext4 ro wait,slotselect,logical
+odm /odm erofs ro wait,slotselect,logical
+odm /odm ext4 ro wait,slotselect,logical
+mi_ext /mi_ext erofs ro wait,slotselect,logical
+mi_ext /mi_ext ext4 ro wait,slotselect,logical
+/dev/block/by-name/metadata /metadata ext4 noatime,nosuid,nodev,discard wait,check,formattable
+/dev/block/bootdevice/by-name/userdata /data f2fs noatime,nosuid,nodev,discard,reserve_root=32768,resgid=1065,fsync_mode=nobarrier,inlinecrypt,gc_merge,compress_mode=user,compress_cache,age_extent_cache,atgc latemount,wait,check,formattable,fileencryption=aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized+wrappedkey_v0,keydirectory=/metadata/vold/metadata_encryption,metadata_encryption=aes-256-xts:wrappedkey_v0,quota,reservedsize=128M,sysfs_path=/sys/devices/platform/soc/1d84000.ufshc,checkpoint=fs
+/dev/block/bootdevice/by-name/persist /persist ext4 noatime,nosuid,nodev wait
+/dev/block/bootdevice/by-name/rescue /cache ext4 nosuid,nodev wait
+# Boot control and bootloader_message resolve misc through ReadDefaultFstab.

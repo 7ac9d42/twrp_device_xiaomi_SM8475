@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT
+service boot-hal-1-2 /system/bin/hw/boot-service.liuqin
+    interface android.hardware.boot@1.0::IBootControl default
+    interface android.hardware.boot@1.1::IBootControl default
+    interface android.hardware.boot@1.2::IBootControl default
+    class hal
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0

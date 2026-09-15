@@ -1,0 +1,14 @@
+# VNDK 31 stays private to target-firmware HALs.
+# Stable C LLNDK interfaces are resolved in the modern system namespace.
+dir.vendor = /twrp_vendor/bin
+
+[vendor]
+additional.namespaces = system
+namespace.default.isolated = true
+namespace.default.search.paths = /twrp_vendor/${LIB}:/twrp_vendor/${LIB}/hw
+namespace.default.permitted.paths = /twrp_vendor/${LIB}
+namespace.default.links = system
+namespace.default.link.system.shared_libs = libc.so:libm.so:libdl.so:liblog.so:libbinder_ndk.so
+namespace.system.isolated = true
+namespace.system.search.paths = /system/${LIB}
+namespace.system.permitted.paths = /system/${LIB}

@@ -1,0 +1,6 @@
+{
+  "project": "cts",
+  "base_commit": "e70f92f52c9830ee8f93d89d032e2b14765c5941",
+  "license": "Apache-2.0",
+  "patch": "platform-release.patch"
+}

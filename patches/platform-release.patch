@@ -1,0 +1,11 @@
+diff --git a/tests/tests/os/assets/platform_releases.txt b/tests/tests/os/assets/platform_releases.txt
+index 43b2ad17..02d1a681 100644
+--- a/tests/tests/os/assets/platform_releases.txt
++++ b/tests/tests/os/assets/platform_releases.txt
+@@ -1,4 +1,5 @@
+ 14
+ 15
+ 16
++17
+ 99.87.36
+\ No newline at end of file

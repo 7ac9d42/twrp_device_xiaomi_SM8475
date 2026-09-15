@@ -1,0 +1,367 @@
+{
+  "firmware": "OS4.0.0.129.XMYCNXM",
+  "android": 17,
+  "device": "liuqin",
+  "super_bytes": 9126805504,
+  "vendor_offset": 7131365376,
+  "vendor_bytes": 1391276032,
+  "files": [
+    {
+      "destination": "recovery/root/vendor/bin/hw/android.hardware.gatekeeper@1.0-service-qti",
+      "sha256": "2f0538bf02cf62a0cb66e8351205edbef28b0e77d6d6da2175310becc71df2a6",
+      "bytes": 15392,
+      "kind": "vendor",
+      "path": "/bin/hw/android.hardware.gatekeeper@1.0-service-qti"
+    },
+    {
+      "destination": "recovery/root/vendor/bin/hw/android.hardware.health@2.1-service",
+      "sha256": "6f53b28bf37a5f3dbbe9a520a7ace6e5239334f406899d14980d18a4acecb30e",
+      "bytes": 65032,
+      "kind": "vendor",
+      "path": "/bin/hw/android.hardware.health@2.1-service"
+    },
+    {
+      "destination": "recovery/root/vendor/bin/hw/android.hardware.keymaster@4.1-service-qti",
+      "sha256": "718d9eaf65b29667a59ba32f736d4f08b53530f06b2fb392c801e8bb2c05763a",
+      "bytes": 24056,
+      "kind": "vendor",
+      "path": "/bin/hw/android.hardware.keymaster@4.1-service-qti"
+    },
+    {
+      "destination": "recovery/root/vendor/bin/hw/android.hardware.security.keymint-service-qti",
+      "sha256": "6f759625e8f1463dcc4b282e04503df5c49c0c0835bb7dee7f3f2f46c41ba0e9",
+      "bytes": 36840,
+      "kind": "vendor",
+      "path": "/bin/hw/android.hardware.security.keymint-service-qti"
+    },
+    {
+      "destination": "recovery/root/vendor/bin/qseecomd",
+      "sha256": "1d47f1f5c238475d97af79763676ba80caae6b0f7947f0c5cbc6b416a8100659",
+      "bytes": 28464,
+      "kind": "vendor",
+      "path": "/bin/qseecomd"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.gatekeeper@1.0.so",
+      "sha256": "df62bf269f253c1d73b6470822ff0d435f6f8d87e19c8e93f22622852572c4fd",
+      "bytes": 106712,
+      "kind": "vendor",
+      "path": "/lib64/android.hardware.gatekeeper@1.0.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.health@1.0.so",
+      "sha256": "d6a124dff469da68c54e30a6efb6a95888d43cdfb098a5a3a31153cae1a228ce",
+      "bytes": 14848,
+      "kind": "vendor",
+      "path": "/lib64/android.hardware.health@1.0.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.health@2.0.so",
+      "sha256": "2666761445c01ed720e2cf0a4492946469b336195996b0ad763492554386fc7c",
+      "bytes": 199288,
+      "kind": "vendor",
+      "path": "/lib64/android.hardware.health@2.0.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.health@2.1.so",
+      "sha256": "ab399f6f3ab80e373911e7d4cf2fe6e247945190ad1a0056759414dae2a4f408",
+      "bytes": 190736,
+      "kind": "vendor",
+      "path": "/lib64/android.hardware.health@2.1.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.keymaster@3.0.so",
+      "sha256": "50d6100cf6c04e38df3fbdb69bcc8f1f8a2f11b03a69b6e7324191b07209b3a1",
+      "bytes": 165640,
+      "kind": "vendor",
+      "path": "/lib64/android.hardware.keymaster@3.0.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.keymaster@4.0.so",
+      "sha256": "1d2a9dff3f1c770393097e4fbd68c59a3c3272902ce5a3fe6032dbd6b5a4515b",
+      "bytes": 193256,
+      "kind": "vendor",
+      "path": "/lib64/android.hardware.keymaster@4.0.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.keymaster@4.1.so",
+      "sha256": "3df331dc6e06aadd35e050a11b5a24fe2b1f3ff3da78201694ac0739f8c569c3",
+      "bytes": 134536,
+      "kind": "vendor",
+      "path": "/lib64/android.hardware.keymaster@4.1.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.security.keymint-V1-ndk_platform.so",
+      "sha256": "683cbfc1512f16e88c27045de534a9a8f5f63244a7bcf6e23358e3bf013c0832",
+      "bytes": 119672,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-core/android.hardware.security.keymint-V1-ndk_platform.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.security.secureclock-V1-ndk_platform.so",
+      "sha256": "2b5b1c44eb71ee35dd2338382fd48262700a16d8495b6b7e075f49a108929fb5",
+      "bytes": 33424,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-core/android.hardware.security.secureclock-V1-ndk_platform.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/android.hardware.security.sharedsecret-V1-ndk_platform.so",
+      "sha256": "ef38d7300519550a47dd673f0dd5a3f5c64af5e241f4d633de6ec844ab0d49d5",
+      "bytes": 37552,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-core/android.hardware.security.sharedsecret-V1-ndk_platform.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/hw/android.hardware.gatekeeper@1.0-impl-qti.so",
+      "sha256": "4e0d3b867a1d9a8db054c7e57fe67dd189f463f0bdd72ead5b68990e669944fd",
+      "bytes": 58320,
+      "kind": "vendor",
+      "path": "/lib64/hw/android.hardware.gatekeeper@1.0-impl-qti.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/hw/android.hardware.health@2.0-impl-2.1-qti.so",
+      "sha256": "06bad796e83a44d49c8e4b6112a354223587d1133f511c2ed7719a66500afbce",
+      "bytes": 88192,
+      "kind": "vendor",
+      "path": "/lib64/hw/android.hardware.health@2.0-impl-2.1-qti.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libGPreqcancel.so",
+      "sha256": "e8d4672d607af7dd0071d13fb2b9c821da735cbdc209b84d4056df00e24d9a01",
+      "bytes": 23544,
+      "kind": "vendor",
+      "path": "/lib64/libGPreqcancel.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libGPreqcancel_svc.so",
+      "sha256": "a0064d6f2acde18dedf456fca8620e9d5db139ee3d2728a9fabdc8d7541d10dc",
+      "bytes": 27736,
+      "kind": "vendor",
+      "path": "/lib64/libGPreqcancel_svc.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libQSEEComAPI.so",
+      "sha256": "7df6de3cda9b2c2cf839df63c365cd6814877898572a13ef86a5b34e07c79435",
+      "bytes": 36264,
+      "kind": "vendor",
+      "path": "/lib64/libQSEEComAPI.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libbase.so",
+      "sha256": "deb22a37ede52b435f80b7f3e8a41de3985e4820b2d5d9dc976792259fc7da9a",
+      "bytes": 242976,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libbase.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libc++.so",
+      "sha256": "dfe00c553710df290c7dd0928ed6eafd906c276c68560c12be8bb97e137cbd98",
+      "bytes": 700400,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libc++.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libcrypto.so",
+      "sha256": "522cd5f4640d63982440ee227885ee03f20bd0812e0a82a923bee58ffd69400a",
+      "bytes": 1220048,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-core/libcrypto.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libcutils.so",
+      "sha256": "d03586f264eb85f9069653d45b85458fca045d6bf0eb77a2ba05b042b96de6e7",
+      "bytes": 69496,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libcutils.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libdiag.so",
+      "sha256": "c68f3e0aa9698342168de9b6df2ba3349c3904bea09d5eb00ad90518c71c9ac8",
+      "bytes": 291800,
+      "kind": "vendor",
+      "path": "/lib64/libdiag.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libdisplayconfig.qti.so",
+      "sha256": "9924976c808fc4e52066b105377575d8d799c79c3771c353079853eaf08df724",
+      "bytes": 148824,
+      "kind": "vendor",
+      "path": "/lib64/libdisplayconfig.qti.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libdmabufheap.so",
+      "sha256": "7dd8c7f03d244d02ad4d84a5495a90adfd4b2ca13dc91180f63a325bbe015363",
+      "bytes": 83296,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libdmabufheap.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libdrm.so",
+      "sha256": "28cb1c84cb0b59bc6f9dda0fefef7a553747ce6f1384327ebdf6b16f3408fa62",
+      "bytes": 94744,
+      "kind": "vendor",
+      "path": "/lib64/libdrm.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libdrmfs.so",
+      "sha256": "76a691968e34203282e77714339861668fa4ac0211842a9c72d077eb4f9057df",
+      "bytes": 44616,
+      "kind": "vendor",
+      "path": "/lib64/libdrmfs.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libdrmtime.so",
+      "sha256": "50f509c15984a751039d117a76731a6a5d450d42cd0e3884e78e44bfa2ad646e",
+      "bytes": 19168,
+      "kind": "vendor",
+      "path": "/lib64/libdrmtime.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libhardware.so",
+      "sha256": "10114b3ee91bc277433293139056ae535895d617107d0083597d02c963869e01",
+      "bytes": 10744,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libhardware.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libhidlbase.so",
+      "sha256": "11c80c595b09470f8d1af20d30bcdbad0dee48b7c68212af3c06e126ecb10956",
+      "bytes": 698808,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libhidlbase.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libion.so",
+      "sha256": "abdcdaa78553907e33ab4156ea658fae3dd4ae9632e71d2d1d5997d640d93581",
+      "bytes": 10656,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libion.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libkeymaster_messages.so",
+      "sha256": "ac70143bb2c539126f622c8ec932a4785e956b6d6d492f28f9a8cfae49c729c3",
+      "bytes": 113624,
+      "kind": "vendor",
+      "path": "/lib64/libkeymaster_messages.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libkeymasterdeviceutils.so",
+      "sha256": "1aecc86929ec95e67f16190a6f4a0e71684f9e7ec0b8f57029d177bfdfbc89e5",
+      "bytes": 32056,
+      "kind": "vendor",
+      "path": "/lib64/libkeymasterdeviceutils.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libkeymasterutils.so",
+      "sha256": "1f0616fb886712d43f0032c4ca7e08f419ceb11518ab9dae73c524881550ab43",
+      "bytes": 235072,
+      "kind": "vendor",
+      "path": "/lib64/libkeymasterutils.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libops.so",
+      "sha256": "0b65e8686c13ece3b5d9130f23184aacac584f47e573f439cb7fe4bafc9d5f04",
+      "bytes": 23856,
+      "kind": "vendor",
+      "path": "/lib64/libops.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libprocessgroup.so",
+      "sha256": "c68bd14075b95cdd5f34c39f0a3118b99247bdccae9c5775962c7e288873510f",
+      "bytes": 330768,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libprocessgroup.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libqcbor.so",
+      "sha256": "880f55ba65846a288d912594ef9c8a156166f2906d0e8a68ba14d52fa3d034f7",
+      "bytes": 27512,
+      "kind": "vendor",
+      "path": "/lib64/libqcbor.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libqisl.so",
+      "sha256": "74acadc4be885d7d46f39427ba5d63e40215fb74f67d58068f8123fdf271f456",
+      "bytes": 32256,
+      "kind": "vendor",
+      "path": "/lib64/libqisl.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libqtikeymaster4.so",
+      "sha256": "694bfcf4d4cfdbb1cc18bfa840149063efcb315d969a17a72b5ef91aabfe8391",
+      "bytes": 216168,
+      "kind": "vendor",
+      "path": "/lib64/libqtikeymaster4.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libqtikeymint.so",
+      "sha256": "b04d1b58a3c8aa1561649c0d4d904004e8e3ee9b6b7fa894cbd2417ca7a35aeb",
+      "bytes": 250328,
+      "kind": "vendor",
+      "path": "/lib64/libqtikeymint.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/librpmb.so",
+      "sha256": "c8e12a4abb92cb0179b04519bfe711f31bc03923322bd60c73bb058d96864bf0",
+      "bytes": 46096,
+      "kind": "vendor",
+      "path": "/lib64/librpmb.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libspcom.so",
+      "sha256": "3ae2444f8da2e77638f1c9eaa434325856f330579d404c504dcb9a5c2077f387",
+      "bytes": 140928,
+      "kind": "vendor",
+      "path": "/lib64/libspcom.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libspl.so",
+      "sha256": "b657ab09f2f12e0f81b514ecbbed68c1eb586bf2684ce64306e5840700670bfd",
+      "bytes": 15208,
+      "kind": "vendor",
+      "path": "/lib64/libspl.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libssd.so",
+      "sha256": "64b060fef67880e6374ad7a2c642d66796a84f4b92623a9a21734b482cf5bd11",
+      "bytes": 15264,
+      "kind": "vendor",
+      "path": "/lib64/libssd.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libtime_genoff.so",
+      "sha256": "51427de59784c7d02b7ad2904b838850df109bfea68fb97a3a21e7999ae88737",
+      "bytes": 15112,
+      "kind": "vendor",
+      "path": "/lib64/libtime_genoff.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libutils.so",
+      "sha256": "04ed727b5ca64b2b1599a37cd392bbb4e85e39e5288e475c9040d58ff2bebb52",
+      "bytes": 108584,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-sp/libutils.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libvmmem.so",
+      "sha256": "0d95b87347448850731260da6c0c3279ff58ea4a95cff100813d48edce4f6dac",
+      "bytes": 28064,
+      "kind": "vendor",
+      "path": "/lib64/libvmmem.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/libxml2.so",
+      "sha256": "3eef7622fdd63ee0bc6ac8d8ff03f80bdac3c71e84b30968a373ed386aad8c1c",
+      "bytes": 1279720,
+      "kind": "source-tree",
+      "path": "prebuilts/vndk/v31/arm64/arch-arm64-armv8-a/shared/vndk-core/libxml2.so"
+    },
+    {
+      "destination": "recovery/root/vendor/lib64/vendor.display.config@2.0.so",
+      "sha256": "33a6e22572a1f39c015e0e1c681bfa2195d7402d8636da4b3d71eb746dd9bf1a",
+      "bytes": 153168,
+      "kind": "vendor",
+      "path": "/lib64/vendor.display.config@2.0.so"
+    }
+  ]
+}

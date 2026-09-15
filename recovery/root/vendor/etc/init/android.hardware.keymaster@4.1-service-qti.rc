@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT
+service vendor.keymaster-4-1 /twrp_vendor/bin/hw/android.hardware.keymaster@4.1-service-qti
+    class early_hal
+    user system
+    group system drmrpc
+    disabled
+    seclabel u:r:recovery:s0
+    setenv LD_LIBRARY_PATH /twrp_vendor/lib64:/twrp_vendor/lib64/hw
+    setenv LD_CONFIG_FILE /twrp_vendor/etc/ld.config.liuqin.txt
