@@ -28,10 +28,12 @@ on property:vendor.sys.listeners.registered=true
 
 on property:twrp.modules.loaded=true
     mkdir /firmware
-    mount vfat /dev/block/bootdevice/by-name/modem${ro.boot.slot_suffix} /firmware ro
+    mount vfat /dev/block/bootdevice/by-name/modem${ro.boot.slot_suffix} /firmware ro nosuid nodev noexec context=u:object_r:rootfs:s0
+    write /sys/module/firmware_class/parameters/path /firmware/image
     wait /sys/kernel/boot_adsp/boot 10
     write /sys/kernel/boot_adsp/boot 1
     start vendor.qseecomd
+    wait /sys/class/power_supply/battery/capacity 10
     start health-hal-2-1
 
 on boot
