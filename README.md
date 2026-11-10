@@ -20,6 +20,8 @@ gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
 构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
 默认同步并发为 8、编译并发为 4，Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
 通过 Actions cache 持久化最多 5 GiB 的 ccache；源码和 `out/` 不做整体缓存。
+缓存受 GitHub 分支作用域限制；迁移到尚无兼容缓存的分支（包括首次合入 main）时，
+首轮仍需填充缓存，后续运行才能获得暖缓存收益。
 runner 会按白名单释放无关 SDK 空间，分配 swap 后为首次同步保留至少 100 GiB，
 并在编译前检查至少 25 GiB 剩余空间；
 阶段超时或磁盘余量不足会终止任务并上传诊断。
@@ -45,6 +47,36 @@ CI 不创建 Release。CI 通过代表构建与静态检查通过，新版触控
 
 锁定清单包含 398 个项目，Linux 构建实际使用 397 个；macOS Bazel 项目标记为 `notdefault`，
 未参与构建。下载产物中的 resolved manifest 已核对，所有实际项目的提交均与锁定清单一致。
+
+### CI 性能实测
+
+同一锁定源码、标准四核 runner 的两次优化后构建均通过镜像验证，设备树提交为
+`d61e65d17d385fd571b20c0fa07eac4efdc01dd0`。
+
+| 项目 | 优化前 #2 | 首次填充缓存 [#4](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42787439077) | 恢复缓存 [#5](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42796996648) |
+| --- | --- | --- | --- |
+| 源码同步 | 24:28 | 20:59 | 24:28 |
+| 编译 | 78:42 | 39:02 | 25:48 |
+| runner 执行总时长 | 106:27 | 63:02 | 53:23 |
+| ccache 可缓存调用命中率 | 未启用 | 36.68% | 100%（13238/13238） |
+
+时间单位为分:秒。编译时间取上游构建日志，其余取阶段计时和 job 起止时间；
+总时长包含缓存传输、环境准备、验证和上传，不包含排队。
+首次构建也会复用本次运行中已产生的相同编译结果，因此命中率不为零。
+暖缓存恢复耗时 9 秒，精确命中后跳过重复保存；缓存实际约 0.8 GiB。
+100% 只表示可缓存调用命中，Soong、Rust、链接等工作仍需执行。
+
+编译阶段采样平均 CPU 使用率约 96% / 93%，最低可用内存约 1.8 / 1.6 GiB，
+swap 使用峰值约 176 / 121 MiB，磁盘最低余量约 26 GiB。
+同步阶段平均 CPU 使用率仅约 11% / 15%，仍受网络影响，不能将更高并发等同于稳定提速。
+这些数据为本次测量结果，不保证每次 runner 和网络环境相同。
+
+最新性能验证镜像来自 `yarp-liuqin-5`，大小 104857600 字节；下载后的哈希与
+`SHA256SUMS` 和镜像检查报告一致，SHA-256：
+
+```text
+1a46c96b5e8e769e83d05fcba50a3bf528fead0ff95341854f75ed969a1e5b63
+```
 
 ## 旧版 TWRP 已验证范围
 
