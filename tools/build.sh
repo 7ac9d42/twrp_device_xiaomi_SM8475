@@ -12,7 +12,7 @@ export ALLOW_MISSING_DEPENDENCIES=true
 export USE_CCACHE="${USE_CCACHE:-true}"
 if [[ "$USE_CCACHE" == true ]]; then
     export CCACHE_EXEC=/usr/bin/ccache CCACHE_COMPILERCHECK=content
-    export CCACHE_DIR="${CCACHE_DIR:-$root/.ccache}" CCACHE_BASEDIR="$root"
+    export CCACHE_DIR="${CCACHE_DIR:-$root/out/ccache}" CCACHE_BASEDIR="$root"
     export CC_WRAPPER=/usr/bin/ccache CXX_WRAPPER=/usr/bin/ccache
 fi
 export LC_ALL=C SOONG_GOMEMLIMIT="${SOONG_GOMEMLIMIT:-6GiB}"

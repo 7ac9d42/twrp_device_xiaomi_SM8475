@@ -33,11 +33,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/yarp-source" "$RUNNER_TEMP/yarp-download" "$RUNNER_TEMP/yarp-logs" "$RUNNER_TEMP/yarp-output" "$RUNNER_TEMP/yarp-ccache"
+          mkdir -p "$RUNNER_TEMP/yarp-source" "$RUNNER_TEMP/yarp-download" "$RUNNER_TEMP/yarp-logs" "$RUNNER_TEMP/yarp-output" "$RUNNER_TEMP/yarp-source/out/ccache"
           {
             printf 'SOURCE_ROOT=%s/yarp-source\n' "$RUNNER_TEMP"
             printf 'CI_LOG_DIR=%s/yarp-logs\n' "$RUNNER_TEMP"
-            printf 'CCACHE_DIR=%s/yarp-ccache\n' "$RUNNER_TEMP"
+            printf 'CCACHE_DIR=%s/yarp-source/out/ccache\n' "$RUNNER_TEMP"
             printf 'CI_DEADLINE=%s\n' "$(( $(date +%s) + 330 * 60 ))"
           } >> "$GITHUB_ENV"
 
@@ -131,7 +131,7 @@ jobs:
         timeout-minutes: 10
         uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
-          path: ${{ runner.temp }}/yarp-ccache
+          path: ${{ runner.temp }}/yarp-source/out/ccache
           key: ${{ steps.cache-config.outputs.key }}
           restore-keys: ${{ steps.cache-config.outputs.prefix }}
 
@@ -201,7 +201,7 @@ jobs:
         timeout-minutes: 10
         uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
-          path: ${{ runner.temp }}/yarp-ccache
+          path: ${{ runner.temp }}/yarp-source/out/ccache
           key: ${{ steps.cache-config.outputs.key }}
 
       - name: Record compiler cache save
