@@ -32,7 +32,7 @@ Android 17 解密实现来自 TWRP-Test 上游，本项目提供 liuqin 的设�
 
 Recovery 的 `LoadVendorModules()` 已在发布 `twrp.modules.loaded` 前显式卸载本函数挂载的分区、禁用 scope guard 并恢复可选设备运行资源，因此删除旧 module-order 补丁。GUI2 的中文目录编译在 `libgui2.so` 中；`gui2/resources/Android.bp` 的 `gui2_fonts` 使用根目录 `prebuilt_res`，安装到 `/res/fonts/`。镜像验证改查 GUI2/LVGL/codec 运行库、中文目录和三个 TTF 字体，替代旧 `/twres/languages/zh_CN.xml` 断言；现有触控固件哈希、ELF、fstab、VINTF、init、AVB 与安全服务顺序检查继续保留。
 
-以上完成静态核对；完整编译、产物验证及设备运行验证由后续 CI 和实机测试确认。
+2026-11-10 的 [CI #2](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42769591941) 已完成标准 Ubuntu 24.04 hosted runner 冷缓存编译，并通过镜像格式、ELF 依赖、GUI2 资源、触控固件、fstab、VINTF、init、AVB 与启动配置检查。本地下载后已核对镜像 SHA-256 和 resolved manifest。锁定清单共 398 个项目，实际 Linux 清单为 397 个；差异仅为带 `notdefault,platform-darwin` 分组的 `prebuilts/bazel/darwin-x86_64`，其余项目名称和提交全部一致。镜像哈希及设备树提交见 README；新版触控、密码解密、MTP 和重启系统尚未经真机验证。
 
 ## 测试包致谢
 

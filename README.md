@@ -1,6 +1,6 @@
 # YARP device tree — Xiaomi Pad 6 Pro / liuqin
 
-**仅在小米平板 6 Pro（liuqin）测试通过。仓库名称包含 SM8475，不代表其他同 SoC 设备受支持。**
+**仅面向小米平板 6 Pro（liuqin）。旧版 TWRP 已通过下文所列真机测试，本次 YARP 构建已通过 CI，尚未经真机验证。仓库名称包含 SM8475，不代表其他同 SoC 设备受支持。**
 没有测试其他手机或下文未列出的固件；不建议将 liuqin 镜像用于其他设备。
 
 面向 HyperOS 4 / Android 17 的 YARP 设备适配，基于
@@ -30,6 +30,18 @@ runner 会按白名单释放无关 SDK 空间，分配 swap 后为首次同步�
 成功后下载 `yarp-liuqin-<run_number>` artifact，包含 `recovery.img`、`SHA256SUMS`、
 完整源码 manifest 和设备树提交。检查与构建日志存放在独立 diagnostics artifact，保留 14 天。
 CI 不创建 Release。CI 通过代表构建与静态检查通过，新版触控、密码解密和重启仍需真机验证。
+
+2026-11-10 的[成功构建 #2](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42769591941)
+使用设备树提交 `29d8ba4b359f9cbc3b4fe4343aec9da43304126d`，artifact 为 `yarp-liuqin-2`。
+标准 runner 冷缓存构建全流程约 106 分钟，结束时磁盘剩余约 28 GiB。
+镜像大小为 104857600 字节（100 MiB），SHA-256：
+
+```text
+470f23ba9563cb9b860a3e1991272563985a6ae4445862ace884d7d291b5a081
+```
+
+锁定清单包含 398 个项目，Linux 构建实际使用 397 个；macOS Bazel 项目标记为 `notdefault`，
+未参与构建。下载产物中的 resolved manifest 已核对，所有实际项目的提交均与锁定清单一致。
 
 ## 旧版 TWRP 已验证范围
 
