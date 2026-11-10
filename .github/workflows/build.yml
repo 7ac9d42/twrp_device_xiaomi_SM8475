@@ -83,6 +83,7 @@ jobs:
           rsync -a --exclude=.git --exclude=.github "$GITHUB_WORKSPACE/" device/xiaomi/liuqin/
 
       - name: Synchronize minimal sources
+        id: sync
         shell: bash
         run: |
           set -euo pipefail
@@ -218,12 +219,14 @@ jobs:
       - name: Collect diagnostics
         if: always()
         shell: bash
+        env:
+          SYNC_OUTCOME: ${{ steps.sync.outcome }}
         run: |
           mkdir -p "$RUNNER_TEMP/yarp-logs"
           df -h > "$RUNNER_TEMP/yarp-logs/disk-final.log"
           free -h > "$RUNNER_TEMP/yarp-logs/memory-final.log"
-          if [[ -d "$SOURCE_ROOT/.repo" ]]; then
-            (cd "$SOURCE_ROOT" && repo diff) > "$RUNNER_TEMP/yarp-logs/source-patches.diff" 2>&1 || true
+          if [[ "$SYNC_OUTCOME" == success && -d "$SOURCE_ROOT/.repo" ]]; then
+            (cd "$SOURCE_ROOT" && timeout --kill-after=5s 60s repo diff) > "$RUNNER_TEMP/yarp-logs/source-patches.diff" 2>&1 || true
           fi
           python3 -I tools/ci/summarize.py --logs "$CI_LOG_DIR" --source "$SOURCE_ROOT" --summary "$GITHUB_STEP_SUMMARY"
 
