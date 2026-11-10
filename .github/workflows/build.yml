@@ -1,0 +1,144 @@
+name: Build YARP for liuqin
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yarp-liuqin-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      JOBS: '2'
+      SYNC_JOBS: '2'
+      SOONG_GOMEMLIMIT: 6GiB
+      USE_CCACHE: 'false'
+      CCACHE_MAX_SIZE: 5Gi
+      DEBIAN_FRONTEND: noninteractive
+      GIT_TERMINAL_PROMPT: '0'
+    steps:
+      - name: Check out the device tree
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Initialize build paths and deadline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/yarp-source" "$RUNNER_TEMP/yarp-download" "$RUNNER_TEMP/yarp-logs" "$RUNNER_TEMP/yarp-output"
+          {
+            printf 'SOURCE_ROOT=%s/yarp-source\n' "$RUNNER_TEMP"
+            printf 'CI_LOG_DIR=%s/yarp-logs\n' "$RUNNER_TEMP"
+            printf 'CI_DEADLINE=%s\n' "$(( $(date +%s) + 330 * 60 ))"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare standard hosted runner
+        shell: bash
+        run: bash tools/ci/prepare-runner.sh
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --kill-after=15s 5m sudo -n apt-get update
+          timeout --kill-after=15s 10m sudo -n apt-get install -y --no-install-recommends \
+            bc bison build-essential ccache curl flex g++-multilib gcc-multilib git \
+            gperf lib32z1-dev libelf-dev liblz4-dev libncurses-dev libssl-dev \
+            libxml2-utils libzstd-dev lz4 lzop python-is-python3 python3 repo \
+            rsync unzip xsltproc zip zlib1g-dev
+          sudo -n apt-get clean
+
+      - name: Verify and extract fixed vendor payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="$RUNNER_TEMP/yarp-download/recovery.img"
+          curl --fail --location --retry 2 --connect-timeout 20 --max-time 300 \
+            https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/releases/download/v1.0.0/recovery.img \
+            --output "$image"
+          python3 -I tools/extract-files.py --root "$SOURCE_ROOT" --recovery "$image" \
+            2>&1 | tee "$CI_LOG_DIR/vendor-extraction.log"
+          python3 -I tools/extract-files.py --root "$SOURCE_ROOT" --check
+
+      - name: Initialize the locked manifest
+        working-directory: ${{ env.SOURCE_ROOT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash "$GITHUB_WORKSPACE/tools/ci/run-stage.sh" init \
+            repo init \
+            -u "https://github.com/$GITHUB_REPOSITORY.git" -b "$GITHUB_SHA" \
+            -m integration/manifest.lock.xml --depth=1 --partial-clone \
+            --clone-filter=blob:none --no-clone-bundle
+          mkdir -p device/xiaomi/liuqin
+          rsync -a --exclude=.git --exclude=.github "$GITHUB_WORKSPACE/" device/xiaomi/liuqin/
+
+      - name: Synchronize minimal sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/ci/run-stage.sh sync bash "$SOURCE_ROOT/device/xiaomi/liuqin/tools/sync.sh"
+          cd "$SOURCE_ROOT"
+          repo manifest -r -o "$RUNNER_TEMP/yarp-output/manifest.lock.xml"
+          df -h . | tee "$CI_LOG_DIR/disk-after-sync.log"
+          free -h | tee "$CI_LOG_DIR/memory-after-sync.log"
+
+      - name: Build recovery and validation tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/ci/run-stage.sh build bash "$SOURCE_ROOT/device/xiaomi/liuqin/tools/build.sh"
+
+      - name: Verify the final image
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/ci/run-stage.sh verify bash "$SOURCE_ROOT/device/xiaomi/liuqin/tools/verify.sh"
+          cp "$SOURCE_ROOT/out/target/product/liuqin/recovery.img" "$RUNNER_TEMP/yarp-output/recovery.img"
+          cd "$RUNNER_TEMP/yarp-output"
+          sha256sum recovery.img > SHA256SUMS
+          printf 'device_tree=%s\nrepository=%s\n' "$GITHUB_SHA" "$GITHUB_REPOSITORY" > source.txt
+
+      - name: Collect diagnostics
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/yarp-logs"
+          df -h > "$RUNNER_TEMP/yarp-logs/disk-final.log"
+          free -h > "$RUNNER_TEMP/yarp-logs/memory-final.log"
+          if [[ -d "$SOURCE_ROOT/.repo" ]]; then
+            (cd "$SOURCE_ROOT" && repo diff) > "$RUNNER_TEMP/yarp-logs/source-patches.diff" 2>&1 || true
+          fi
+
+      - name: Upload verified recovery
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: yarp-liuqin-${{ github.run_number }}
+          path: ${{ runner.temp }}/yarp-output/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 1
+
+      - name: Upload logs and image checks
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: yarp-liuqin-diagnostics-${{ github.run_number }}
+          path: |
+            ${{ runner.temp }}/yarp-logs/
+            ${{ runner.temp }}/yarp-source/logs/
+            ${{ runner.temp }}/yarp-source/artifacts/*.json
+            ${{ runner.temp }}/yarp-source/artifacts/*.xml
+            ${{ runner.temp }}/yarp-source/artifacts/image-check/report.json
+          if-no-files-found: warn
+          retention-days: 14
+          compression-level: 1

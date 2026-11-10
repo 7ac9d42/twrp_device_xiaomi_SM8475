@@ -12,4 +12,4 @@ mkdir -p "$clang_git/info"
 cp "$tree/integration/clang-sparse-checkout.txt" "$clang_git/info/sparse-checkout"
 repo sync -l -j1 prebuilts/clang/host/linux-x86
 mapfile -t projects < <(repo list -a -p | grep -vx prebuilts/clang/host/linux-x86)
-repo sync -c -j"${SYNC_JOBS:-8}" --no-clone-bundle --no-tags --optimized-fetch "${projects[@]}"
+repo sync -c -j"${SYNC_JOBS:-2}" --no-clone-bundle --no-tags --optimized-fetch --fail-fast "${projects[@]}"

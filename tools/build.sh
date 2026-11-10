@@ -13,15 +13,21 @@ export PATH=/usr/local/bin:/usr/bin:/bin
 export ALLOW_MISSING_DEPENDENCIES=true
 # Upstream minimal manifest omits unrelated test/system projects. Selected missing
 # dependencies still generate failing Ninja rules; do not bypass those failures.
-export USE_CCACHE=true CCACHE_EXEC=/usr/bin/ccache CCACHE_COMPILERCHECK=content
-export CCACHE_DIR="$root/.ccache" CC_WRAPPER=/usr/bin/ccache CXX_WRAPPER=/usr/bin/ccache
-export LC_ALL=C SOONG_GOMEMLIMIT="${SOONG_GOMEMLIMIT:-12GiB}"
-jobs="${JOBS:-$(nproc)}"
+export USE_CCACHE="${USE_CCACHE:-false}"
+if [[ "$USE_CCACHE" == true ]]; then
+    export CCACHE_EXEC=/usr/bin/ccache CCACHE_COMPILERCHECK=content
+    export CCACHE_DIR="${CCACHE_DIR:-$root/.ccache}"
+    export CC_WRAPPER=/usr/bin/ccache CXX_WRAPPER=/usr/bin/ccache
+fi
+export LC_ALL=C SOONG_GOMEMLIMIT="${SOONG_GOMEMLIMIT:-6GiB}"
+jobs="${JOBS:-2}"
 mkdir -p logs artifacts
 available=$(df -Pk . | awk 'NR==2 {print $4}')
 (( available >= 25 * 1024 * 1024 )) || { echo "Less than 25 GiB free" >&2; exit 1; }
-ccache --max-size=15Gi
-ccache --set-config=compression=true
+if [[ "$USE_CCACHE" == true ]]; then
+    ccache --max-size="${CCACHE_MAX_SIZE:-5Gi}"
+    ccache --set-config=compression=true
+fi
 for obsolete in libvndksupport.so libcgrouprc.so; do
     stale="out/target/product/liuqin/recovery/root/vendor/lib64/$obsolete"
     if [[ -f "$stale" ]]; then
@@ -29,8 +35,12 @@ for obsolete in libvndksupport.so libcgrouprc.so; do
         rm -f -- out/target/product/liuqin/obj/PACKAGING/recovery_intermediates/ramdisk_files-timestamp
     fi
 done
-ccache --show-stats > logs/ccache-before.txt
+if [[ "$USE_CCACHE" == true ]]; then
+    ccache --show-stats > logs/ccache-before.txt
+fi
 source build/envsetup.sh
 lunch twrp_liuqin bp2a eng
-m -j"$jobs" recoveryimage 2>&1 | tee "logs/build-$(date +%Y%m%d-%H%M%S).log"
-ccache --show-stats | tee logs/ccache-after.txt
+m -j"$jobs" recoveryimage host_init_verifier assemble_vintf avbtool 2>&1 | tee "logs/build-$(date +%Y%m%d-%H%M%S).log"
+if [[ "$USE_CCACHE" == true ]]; then
+    ccache --show-stats | tee logs/ccache-after.txt
+fi
