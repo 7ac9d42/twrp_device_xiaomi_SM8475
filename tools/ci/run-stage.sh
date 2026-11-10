@@ -26,6 +26,9 @@ mkdir -p -- "$CI_LOG_DIR"
 log_dir=$(mktemp -d "$CI_LOG_DIR/${stage}.XXXXXXXX")
 command_log="$log_dir/command.log"
 resource_log="$log_dir/resources.log"
+started=$(date +%s)
+last_cpu_total=0
+last_cpu_idle=0
 resource_paths=("$PWD" "$CI_LOG_DIR")
 if [[ -n ${SOURCE_ROOT:-} && -d $SOURCE_ROOT ]]; then
     resource_paths+=("$SOURCE_ROOT")
@@ -38,25 +41,64 @@ printf '\n' >> "$command_log"
 # Return an error on failed measurements as well as on low space; do not keep
 # building after the monitor can no longer measure the filesystems being used.
 resources() {
-    local path output available
+    local path output available minimum=9223372036854775807
+    local key value mem_available=0 swap_total=0 swap_free=0
+    local cpu_user cpu_nice cpu_system cpu_idle cpu_wait cpu_irq cpu_softirq cpu_steal
+    local cpu_total cpu_inactive cpu_busy=0 elapsed pressure line
     {
         date -u '+%Y-%m-%dT%H:%M:%SZ'
         df -h -- "${resource_paths[@]}"
         free -h
+        for pressure in cpu memory io; do
+            if [[ -r /proc/pressure/$pressure ]]; then
+                while IFS= read -r line; do
+                    printf 'pressure %s %s\n' "$pressure" "$line"
+                done < "/proc/pressure/$pressure"
+            fi
+        done
+        while read -r key value; do
+            case $key in
+                pswpin|pswpout) printf '%s %s\n' "$key" "$value" ;;
+            esac
+        done < /proc/vmstat
     } >> "$resource_log" 2>&1 || return 1
     for path in "${resource_paths[@]}"; do
         output=$(df -B1 --output=avail -- "$path") || return 1
         available=${output##*$'\n'}
         [[ $available =~ ^[[:space:]]*([0-9]+)[[:space:]]*$ ]] || return 1
-        if (( BASH_REMATCH[1] < 3 * 1024 * 1024 * 1024 )); then
-            printf 'Free space below 3 GiB: %s (%s bytes)\n' "$path" "${BASH_REMATCH[1]}" >> "$resource_log"
+        available=${BASH_REMATCH[1]}
+        (( available >= minimum )) || minimum=$available
+        if (( available < 3 * 1024 * 1024 * 1024 )); then
+            printf 'Free space below 3 GiB: %s (%s bytes)\n' "$path" "$available" >> "$resource_log"
             return 1
         fi
     done
+    while read -r key value _; do
+        case $key in
+            MemAvailable:) mem_available=$value ;;
+            SwapTotal:) swap_total=$value ;;
+            SwapFree:) swap_free=$value ;;
+        esac
+    done < /proc/meminfo
+    read -r _ cpu_user cpu_nice cpu_system cpu_idle cpu_wait cpu_irq cpu_softirq cpu_steal _ < /proc/stat
+    cpu_total=$((cpu_user + cpu_nice + cpu_system + cpu_idle + cpu_wait + cpu_irq + cpu_softirq + cpu_steal))
+    cpu_inactive=$((cpu_idle + cpu_wait))
+    if (( last_cpu_total > 0 && cpu_total > last_cpu_total )); then
+        cpu_busy=$((100 * (cpu_total - last_cpu_total - cpu_inactive + last_cpu_idle) / (cpu_total - last_cpu_total)))
+    fi
+    last_cpu_total=$cpu_total
+    last_cpu_idle=$cpu_inactive
+    elapsed=$(($(date +%s) - started))
+    printf '[%s] elapsed=%02d:%02d:%02d CPU=%s%% available=%sMiB swap-used=%sMiB disk-free=%sMiB\n' \
+        "$stage" "$((elapsed / 3600))" "$((elapsed / 60 % 60))" "$((elapsed % 60))" \
+        "$cpu_busy" "$((mem_available / 1024))" "$(((swap_total - swap_free) / 1024))" \
+        "$((minimum / 1024 / 1024))" | tee -a "$resource_log"
 }
 resources || fail "insufficient disk space or resource check failed; see $resource_log"
 
 stage_pid=
+logger_pid=
+log_fd=
 monitor_pid=
 wait_interrupted=false
 forced_status=0
@@ -93,13 +135,26 @@ interrupt() {
 }
 
 finish() {
-    local status=$?
+    local status=$? logger_status=0 ended
     trap - EXIT
     trap '' INT TERM USR1
     stop_monitor
     # Also collect descendants left behind by an exited command/timeout.
     stop_stage
+    if [[ -n $log_fd ]]; then
+        exec {log_fd}>&-
+        log_fd=
+    fi
+    if [[ -n $logger_pid ]]; then
+        wait "$logger_pid" || logger_status=$?
+        if (( status == 0 && logger_status != 0 )); then
+            status=$logger_status
+        fi
+    fi
     resources || true
+    ended=$(date +%s)
+    printf '{"stage":"%s","start_epoch":%s,"end_epoch":%s,"exit_status":%s}\n' \
+        "$stage" "$started" "$ended" "$status" > "$log_dir/timing.json"
     printf 'Exit status: %s\n' "$status" >> "$resource_log"
     if (( status != 0 )); then
         printf 'Last 80 command log lines for %s:\n' "$stage"
@@ -135,8 +190,13 @@ monitor() {
 # Avoid --foreground: it would only time out the immediate command.
 remaining=$((CI_DEADLINE - $(date +%s)))
 (( remaining > 0 )) || exit 124
-setsid timeout --signal=TERM --kill-after=30s "${remaining}s" "$@" >> "$command_log" 2>&1 &
+exec {log_fd}> >(tee -a "$command_log")
+logger_pid=$!
+setsid timeout --signal=TERM --kill-after=30s "${remaining}s" "$@" >&"$log_fd" 2>&1 &
 stage_pid=$!
+# Only the stage holds the writer; the logger can finish when its output closes.
+exec {log_fd}>&-
+log_fd=
 monitor &
 monitor_pid=$!
 while true; do

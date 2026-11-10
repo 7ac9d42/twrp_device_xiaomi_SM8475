@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
-      JOBS: '2'
-      SYNC_JOBS: '2'
+      JOBS: '4'
+      SYNC_JOBS: '8'
       SOONG_GOMEMLIMIT: 6GiB
-      USE_CCACHE: 'false'
+      USE_CCACHE: 'true'
       CCACHE_MAX_SIZE: 5Gi
       DEBIAN_FRONTEND: noninteractive
       GIT_TERMINAL_PROMPT: '0'
@@ -33,10 +33,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/yarp-source" "$RUNNER_TEMP/yarp-download" "$RUNNER_TEMP/yarp-logs" "$RUNNER_TEMP/yarp-output"
+          mkdir -p "$RUNNER_TEMP/yarp-source" "$RUNNER_TEMP/yarp-download" "$RUNNER_TEMP/yarp-logs" "$RUNNER_TEMP/yarp-output" "$RUNNER_TEMP/yarp-ccache"
           {
             printf 'SOURCE_ROOT=%s/yarp-source\n' "$RUNNER_TEMP"
             printf 'CI_LOG_DIR=%s/yarp-logs\n' "$RUNNER_TEMP"
+            printf 'CCACHE_DIR=%s/yarp-ccache\n' "$RUNNER_TEMP"
             printf 'CI_DEADLINE=%s\n' "$(( $(date +%s) + 330 * 60 ))"
           } >> "$GITHUB_ENV"
 
@@ -92,13 +93,69 @@ jobs:
           free -h | tee "$CI_LOG_DIR/memory-after-sync.log"
           du -sh .repo prebuilts external frameworks > "$CI_LOG_DIR/source-sizes.log"
 
+      - name: Prepare compiler cache restore
+        id: cache-config
+        if: env.USE_CCACHE == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          clang_revision=$(python3 -I -c 'import xml.etree.ElementTree as E; print(E.parse("integration/manifest.lock.xml").find("./project[@path=\"prebuilts/clang/host/linux-x86\"]").attrib["revision"])')
+          manifest_hash=$(sha256sum integration/manifest.lock.xml | cut -d ' ' -f1)
+          config_hash=$(git ls-files -z -- '*.mk' '*.bp' '*.prop' '*.fstab' \
+            'bootctrl/**' 'gpt-utils/**' 'recovery/**' 'prebuilt/**' 'kernel/**' \
+            'patches/**' 'integration/**' 'proprietary-files.json' \
+            'tools/build.sh' 'tools/apply-patches.py' 'tools/extract-files.py' \
+            | sort -z | xargs -0 sha256sum | sha256sum | cut -d ' ' -f1)
+          prefix="yarp-ccache-v1-$RUNNER_OS-$RUNNER_ARCH-$clang_revision-"
+          {
+            printf 'prefix=%s\n' "$prefix"
+            printf 'key=%s%s-%s\n' "$prefix" "$manifest_hash" "$config_hash"
+          } >> "$GITHUB_OUTPUT"
+          df -h "$CCACHE_DIR" | tee "$CI_LOG_DIR/disk-before-cache-restore.log"
+          available=$(df -Pk "$CCACHE_DIR" | awk 'NR==2 {print $4}')
+          if (( available >= 30 * 1024 * 1024 )); then
+            printf 'restore=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'Skip cache restore: less than 30 GiB free for cache plus compilation.\n'
+          fi
+          now=$(date +%s)
+          printf 'CACHE_RESTORE_START=%s\n' "$now" >> "$GITHUB_ENV"
+          printf '{"stage":"cache-restore","start_epoch":%s,"end_epoch":%s,"status":"running"}\n' \
+            "$now" "$now" > "$CI_LOG_DIR/cache-restore.json"
+
+      - name: Restore compiler cache
+        id: cache-restore
+        if: env.USE_CCACHE == 'true' && steps.cache-config.outputs.restore == 'true'
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/yarp-ccache
+          key: ${{ steps.cache-config.outputs.key }}
+          restore-keys: ${{ steps.cache-config.outputs.prefix }}
+
+      - name: Record compiler cache restore
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          CACHE_OUTCOME: ${{ steps.cache-restore.outcome }}
+        run: |
+          now=$(date +%s)
+          printf '{"stage":"cache-restore","start_epoch":%s,"end_epoch":%s,"status":"%s"}\n' \
+            "${CACHE_RESTORE_START:-$now}" "$now" "${CACHE_OUTCOME:-skipped}" > "$CI_LOG_DIR/cache-restore.json"
+          df -h "$CCACHE_DIR" | tee "$CI_LOG_DIR/disk-after-cache-restore.log"
+
       - name: Build recovery and validation tools
+        id: build
         shell: bash
         run: |
           set -euo pipefail
           bash tools/ci/run-stage.sh build bash "$SOURCE_ROOT/device/xiaomi/liuqin/tools/build.sh"
 
       - name: Verify the final image
+        id: verify
         shell: bash
         run: |
           set -euo pipefail
@@ -107,6 +164,56 @@ jobs:
           cd "$RUNNER_TEMP/yarp-output"
           sha256sum recovery.img > SHA256SUMS
           printf 'device_tree=%s\nrepository=%s\n' "$GITHUB_SHA" "$GITHUB_REPOSITORY" > source.txt
+
+      - name: Prepare compiler cache save
+        id: cache-save-config
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          CACHE_HIT: ${{ steps.cache-restore.outputs.cache-hit }}
+          CACHE_KEY: ${{ steps.cache-config.outputs.key }}
+        run: |
+          set -euo pipefail
+          now=$(date +%s)
+          printf 'CACHE_SAVE_START=%s\n' "$now" >> "$GITHUB_ENV"
+          printf '{"stage":"cache-save","start_epoch":%s,"end_epoch":%s,"status":"running"}\n' \
+            "$now" "$now" > "$CI_LOG_DIR/cache-save.json"
+          if [[ "$USE_CCACHE" != true || "$BUILD_OUTCOME" != success || "$VERIFY_OUTCOME" != success || "$CACHE_HIT" == true || -z "$CACHE_KEY" ]]; then
+            printf 'Skip cache save: requires a successful verified build and a new cache key.\n'
+            exit 0
+          fi
+          df -h "$CCACHE_DIR" | tee "$CI_LOG_DIR/disk-before-cache-save.log"
+          available=$(df -Pk "$CCACHE_DIR" | awk 'NR==2 {print $4}')
+          # Reserve 3 GiB free plus 5 GiB for the archive; keep existing data.
+          if (( available >= 8 * 1024 * 1024 )); then
+            printf 'save=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'Skip cache save: less than 8 GiB free for archive and reserve.\n'
+          fi
+
+      - name: Save compiler cache
+        id: cache-save
+        if: always() && steps.cache-save-config.outputs.save == 'true'
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/yarp-ccache
+          key: ${{ steps.cache-config.outputs.key }}
+
+      - name: Record compiler cache save
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          CACHE_OUTCOME: ${{ steps.cache-save.outcome }}
+        run: |
+          now=$(date +%s)
+          printf '{"stage":"cache-save","start_epoch":%s,"end_epoch":%s,"status":"%s"}\n' \
+            "${CACHE_SAVE_START:-$now}" "$now" "${CACHE_OUTCOME:-skipped}" > "$CI_LOG_DIR/cache-save.json"
 
       - name: Collect diagnostics
         if: always()
@@ -118,6 +225,7 @@ jobs:
           if [[ -d "$SOURCE_ROOT/.repo" ]]; then
             (cd "$SOURCE_ROOT" && repo diff) > "$RUNNER_TEMP/yarp-logs/source-patches.diff" 2>&1 || true
           fi
+          python3 -I tools/ci/summarize.py --logs "$CI_LOG_DIR" --source "$SOURCE_ROOT" --summary "$GITHUB_STEP_SUMMARY"
 
       - name: Upload verified recovery
         if: success()
@@ -140,6 +248,14 @@ jobs:
             ${{ runner.temp }}/yarp-source/artifacts/*.json
             ${{ runner.temp }}/yarp-source/artifacts/*.xml
             ${{ runner.temp }}/yarp-source/artifacts/image-check/report.json
+            ${{ runner.temp }}/yarp-source/out/.ninja_log
+            ${{ runner.temp }}/yarp-source/out/soong/.ninja_log
+            ${{ runner.temp }}/yarp-source/out/soong/soong.log
+            ${{ runner.temp }}/yarp-source/out/soong/soong_build_metrics.pb
+            ${{ runner.temp }}/yarp-source/out/soong/build.ninja.d
+            ${{ runner.temp }}/yarp-source/out/soong.log
+            ${{ runner.temp }}/yarp-source/out/soong_build_metrics.pb
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
           compression-level: 1

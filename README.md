@@ -18,10 +18,13 @@ gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
 ```
 
 构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
-默认同步与编译并发均为 2，Soong Go 内存目标 6 GiB，swap 总计约 8 GiB，禁用 ccache。
+默认同步并发为 8、编译并发为 4，Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
+通过 Actions cache 持久化最多 5 GiB 的 ccache；源码和 `out/` 不做整体缓存。
 runner 会按白名单释放无关 SDK 空间，分配 swap 后为首次同步保留至少 100 GiB，
 并在编译前检查至少 25 GiB 剩余空间；
 阶段超时或磁盘余量不足会终止任务并上传诊断。
+同步与编译输出会实时显示在 Actions 日志中，每 30 秒输出阶段耗时和资源摘要；
+运行汇总页同时列出阶段耗时、缓存传输耗时、资源采样和 ccache 命中率。
 
 厂商载荷从本仓库现有 `v1.0.0/recovery.img` 恢复，验证整镜像及清单内每个文件的 SHA-256；
 新版 Recovery 和系统运行库从锁定的上游源码编译。无需下载整套固件。
@@ -31,7 +34,7 @@ runner 会按白名单释放无关 SDK 空间，分配 swap 后为首次同步�
 完整源码 manifest 和设备树提交。检查与构建日志存放在独立 diagnostics artifact，保留 14 天。
 CI 不创建 Release。CI 通过代表构建与静态检查通过，新版触控、密码解密和重启仍需真机验证。
 
-2026-11-10 的[成功构建 #2](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42769591941)
+优化前的基线是 2026-11-10 的[成功构建 #2](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42769591941)
 使用设备树提交 `29d8ba4b359f9cbc3b4fe4343aec9da43304126d`，artifact 为 `yarp-liuqin-2`。
 标准 runner 冷缓存构建全流程约 106 分钟，结束时磁盘剩余约 28 GiB。
 镜像大小为 104857600 字节（100 MiB），SHA-256：
