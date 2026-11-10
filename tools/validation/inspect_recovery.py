@@ -58,7 +58,10 @@ required=[
  "vendor/etc/vintf/manifest.xml",
  "vendor/etc/ld.config.liuqin.txt",
  "system/lib64/hw/bootctrl.taro.so",
- "twres/languages/zh_CN.xml",
+ "system/lib64/libgui2.so","system/lib64/liblvgl_twrp.so",
+ "system/lib64/libvpx.so","system/lib64/libwebm_mkvmuxer.so",
+ "res/fonts/wqy-microhei.ttf","res/fonts/DroidSansMono.ttf",
+ "res/fonts/RobotoCondensed-Regular.ttf",
 ]
 missing=[s for s in required if s not in files]
 fstabs={k:v.decode(errors="replace") for k,v in files.items() if "fstab" in k}
@@ -76,4 +79,9 @@ report={"image":str(a.image.resolve()),"bytes":len(raw),"sha256":hashlib.sha256(
 (a.out/"ramdisk-files.txt").write_text("\n".join(x["name"] for x in entries)+"\n")
 print(json.dumps({k:v for k,v in report.items() if k not in ("entries","fstabs")},indent=2))
 assert not missing,missing
+# GUI2 compiles its language catalogue into libgui2; fonts are root /res assets.
+gui2=files["system/lib64/libgui2.so"]
+assert b"zh_CN" in gui2 and "简体中文".encode() in gui2,"GUI2 Chinese catalogue absent"
+for name in ["res/fonts/wqy-microhei.ttf","res/fonts/DroidSansMono.ttf","res/fonts/RobotoCondensed-Regular.ttf"]:
+ assert files[name],"Empty GUI2 font: "+name
 assert all(encryption.values()),encryption

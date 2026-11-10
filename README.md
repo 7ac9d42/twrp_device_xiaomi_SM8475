@@ -1,13 +1,36 @@
-# TWRP device tree — Xiaomi SM8475 / liuqin
+# YARP device tree — Xiaomi Pad 6 Pro / liuqin
 
 **仅在小米平板 6 Pro（liuqin）测试通过。仓库名称包含 SM8475，不代表其他同 SoC 设备受支持。**
 没有测试其他手机或下文未列出的固件；不建议将 liuqin 镜像用于其他设备。
 
-面向 HyperOS 4 / Android 17 的 TWRP 设备适配，基于
+面向 HyperOS 4 / Android 17 的 YARP 设备适配，基于
 [TWRP-Test 的 twrp-16.0 分支](https://github.com/TWRP-Test/platform_manifest_twrp_aosp/tree/twrp-16.0)。
-Android 17 兼容与解密主体来自该上游；本项目提供 liuqin 硬件配置、服务集成和有日志依据的修复。
+Recovery 与解密主体来自上游；本项目保留 liuqin 硬件配置、安全服务集成和有日志依据的修复。
+上游仓库、产品和构建变量仍沿用 TWRP 命名。
 
-## 已验证范围
+## CI 构建
+
+在 [Actions](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/workflows/build.yml)
+中手动运行 **Build YARP for liuqin**，选择需要构建的分支。也可使用：
+
+```sh
+gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
+```
+
+构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
+默认同步与编译并发均为 2，Soong Go 内存目标 6 GiB，swap 总计约 8 GiB，禁用 ccache。
+runner 会按白名单释放无关 SDK 空间，并在编译前检查至少 25 GiB 剩余空间；
+阶段超时或磁盘余量不足会终止任务并上传诊断。
+
+厂商载荷从本仓库现有 `v1.0.0/recovery.img` 恢复，验证整镜像及清单内每个文件的 SHA-256；
+新版 Recovery 和系统运行库从锁定的上游源码编译。无需下载整套固件。
+载荷不纳入 Git，原始固件提取入口 `tools/extract-files.py --super ... --reader ...` 继续保留。
+
+成功后下载 `yarp-liuqin-<run_number>` artifact，包含 `recovery.img`、`SHA256SUMS`、
+完整源码 manifest 和设备树提交。检查与构建日志存放在独立 diagnostics artifact，保留 14 天。
+CI 不创建 Release。CI 通过代表构建与静态检查通过，新版触控、密码解密和重启仍需真机验证。
+
+## 旧版 TWRP 已验证范围
 
 已测试固件（Android 17）：
 

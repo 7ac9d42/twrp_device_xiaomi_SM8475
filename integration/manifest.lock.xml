@@ -6,8 +6,8 @@
   <remote name="twrp-16.0" fetch="https://github.com/TWRP-Test" />
   <default remote="aosp" revision="refs/tags/android-16.0.0_r1" sync-j="4" />
   <project name="android_bionic" path="bionic" remote="twrp-16.0" revision="99926c766ef7f121950611f047dba4769a25226c" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
-  <project name="android_bootable_recovery" path="bootable/recovery" remote="twrp-16.0" revision="580a0e89cb27007f4584cbb9649ba2607bb21d6a" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
-  <project name="android_build" path="build/make" remote="twrp-16.0" revision="74715e25d7c2ede6ae00db69d08970e3cf81c20c" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1">
+  <project name="android_bootable_recovery" path="bootable/recovery" remote="twrp-16.0" revision="a93a12ec107265ab9c3c7fe3e4f96c8740a01337" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
+  <project name="android_build" path="build/make" remote="twrp-16.0" revision="1ff6b0ae732a31412d94882aaa89d030f0a6be17" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1">
     <linkfile src="CleanSpec.mk" dest="build/CleanSpec.mk" />
     <linkfile src="buildspec.mk.default" dest="build/buildspec.mk.default" />
     <linkfile src="core" dest="build/core" />
@@ -27,6 +27,9 @@
   <project name="android_external_libchrome" path="external/libchrome" remote="twrp-16.0" revision="ea5e82b2c1b9e741903be0dcdaf66af60b23c951" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
   <project name="android_external_libmicrohttpd" path="external/libmicrohttpd" remote="twrp-16.0" revision="37408f6e22f1fe935129e11f1a5c9a5091b4b97a" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
   <project name="android_external_libncurses" path="external/libncurses" remote="twrp-16.0" revision="c750f7bae035137182c1ae8b4a133ff2c1801066" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
+  <project name="android_external_libvpx" path="external/libvpx" remote="twrp-16.0" revision="f42506c3faf4592a9d8929c9ca832fd72fff94a0" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
+  <project name="android_external_libwebm" path="external/libwebm" remote="twrp-16.0" revision="99fcd14602ba76998d086b602f29a243e1d5c835" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
+  <project name="android_external_lvgl" path="external/lvgl" remote="twrp-16.0" revision="992dd52fc5112b24845078ea60c1cf1e2e27c5b5" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
   <project name="android_external_libxml2" path="external/libxml2" remote="twrp-16.0" revision="97b8b0bcb00b062c418758d40db2208fe04ab0c7" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
   <project name="android_external_nano" path="external/nano" remote="LineageOS" revision="b83fc23d564c5377fc7c3322e5f75e81d8dad37e" upstream="lineage-23.2" dest-branch="lineage-23.2" clone-depth="1" />
   <project name="android_external_ntfs-3g" path="external/ntfs-3g" remote="LineageOS" revision="e2415df401538976fb89aa20370903e0c46e51ff" upstream="lineage-23.2" dest-branch="lineage-23.2" clone-depth="1" />
@@ -48,8 +51,8 @@
   <project name="android_system_security" path="system/security" remote="twrp-16.0" revision="d614e274b585a67e80d3d3fbc3a6e9f695998f78" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
   <project name="android_system_sepolicy" path="system/sepolicy" remote="twrp-16.0" revision="372f37fc90e86824e2f25500ac26f3e2b468c11a" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
   <project name="android_system_update_engine" path="system/update_engine" remote="twrp-16.0" revision="a4c7444f722bada4e3880a5e38b42b9aa4ee37a4" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
-  <project name="android_system_vold" path="system/vold" remote="twrp-16.0" revision="4c83041ec61f9b482085685f1e6aed5a62f103aa" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
-  <project name="android_vendor_twrp" path="vendor/twrp" remote="twrp-16.0" revision="f7e60a205cfe0a28cadaa2938ad2c79768ecc38c" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
+  <project name="android_system_vold" path="system/vold" remote="twrp-16.0" revision="e7e26ed2ffd9ad0469a05515cfd91940a3366d19" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
+  <project name="android_vendor_twrp" path="vendor/twrp" remote="twrp-16.0" revision="4c5070577457a8dbb87f71ed53925cb56b397234" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
   <project name="external_magisk-prebuilt" path="external/magisk-prebuilt" remote="twrp-16.0" revision="06808ed6045f6fdd7752124aba94b9698463c92c" upstream="twrp-16.0" dest-branch="twrp-16.0" clone-depth="1" />
   <project name="kernel/configs" revision="e90ea709c3c2ec34bcfd7dca2ebec0bae287c91f" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk,vts" clone-depth="1" />
   <project name="phhusson/vendor_lptools" path="external/lptools" remote="github" revision="c8be7de57b80eab61a6f94ec86464a01fb9056f2" upstream="master" dest-branch="master" clone-depth="1" />
@@ -405,6 +408,12 @@
   <project name="trusty/external/trusted-firmware-a" path="external/trusty/arm-trusted-firmware" revision="d303a2d8e89ec733f10d7c307ee25870ad116ecd" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk,trusty" clone-depth="1" />
   <project name="trusty/external/trusty" path="external/trusty/bootloader" revision="143bc86fb829138216de94d64c517d951ce3f6bb" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk,trusty" clone-depth="1" />
   <project name="trusty/lk/common" path="external/trusty/lk" revision="fbdb7fb564e0f8d839ad3193c314230a6d84dbe5" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk,trusty" clone-depth="1" />
+  <project name="platform/external/cronet" path="external/cronet" revision="3d00a6f18075427606068c038ea2695053213440" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk" clone-depth="1" />
+  <project name="platform/external/openwrt-prebuilts" path="external/openwrt-prebuilts" revision="8921c276c2f72834a3246325433cbbc799fb589c" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk" clone-depth="1" />
+  <project name="kernel/prebuilts/common-modules/trusty/6.6/arm64" path="kernel/prebuilts/common-modules/trusty/6.6/arm64" revision="60e4a7e769835268ae3c3087eec4d9e640677d82" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk" clone-depth="1" />
+  <project name="kernel/prebuilts/common-modules/trusty/6.12/arm64" path="kernel/prebuilts/common-modules/trusty/6.12/arm64" revision="0343e6f68d1c3a48907397712a87b2aaa5b4a58a" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk" clone-depth="1" />
+  <project name="platform/prebuilts/bazel/darwin-x86_64" path="prebuilts/bazel/darwin-x86_64" revision="2e9eda81659bcca9045ca254009cc6641e995a25" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="notdefault,platform-darwin,darwin,pdk" clone-depth="1" />
+  <project name="platform/tools/netsim" path="tools/netsim" revision="843bed74ea4427317487d869131f46b6e0e5c411" upstream="refs/tags/android-16.0.0_r1" dest-branch="refs/tags/android-16.0.0_r1" groups="pdk" clone-depth="1" />
   <superproject name="platform/superproject" revision="android-16.0.0_r1" />
   <contactinfo bugurl="go/repo-bug" />
   <remote name="lineage-liuqin" fetch="https://github.com/" />

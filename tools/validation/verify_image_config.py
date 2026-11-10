@@ -44,7 +44,12 @@ for name in ["vendor/lib64/libcgrouprc.so","vendor/lib64/libvndksupport.so"]:
 assert "/dev/0:0:0:49476 0600 system system" in (root/"vendor/etc/ueventd.rc").read_text()
 rc=(root/"init.recovery.qcom.rc").read_text()
 assert "context=u:object_r:rootfs:s0" in rc and "write /sys/module/firmware_class/parameters/path /firmware/image" in rc
-assert "twres/languages/zh_CN.xml" in entries
+# GUI2 embeds translations in libgui2 and installs fonts through gui2_fonts.
+for name in ["system/lib64/libgui2.so","system/lib64/liblvgl_twrp.so","system/lib64/libvpx.so","system/lib64/libwebm_mkvmuxer.so",
+             "res/fonts/wqy-microhei.ttf","res/fonts/DroidSansMono.ttf","res/fonts/RobotoCondensed-Regular.ttf"]:
+ assert entries.get(name,{}).get("size",0)>0,"GUI2 runtime asset absent or empty: "+name
+gui2=(root/"system/lib64/libgui2.so").read_bytes()
+assert b"zh_CN" in gui2 and "简体中文".encode() in gui2,"GUI2 Chinese catalogue absent"
 for name in ["system/bin/adbd","system/bin/fastbootd","system/lib64/libtwrpmtp-ffs.so","system/lib64/hw/bootctrl.taro.so"]:
  assert name in entries,name
 out={"overlay_files_verified":sum(p.is_file() for p in overlay.rglob("*")),"firmware_properties":wanted,
