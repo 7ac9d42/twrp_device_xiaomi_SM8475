@@ -90,6 +90,7 @@ jobs:
           repo manifest -r -o "$RUNNER_TEMP/yarp-output/manifest.lock.xml"
           df -h . | tee "$CI_LOG_DIR/disk-after-sync.log"
           free -h | tee "$CI_LOG_DIR/memory-after-sync.log"
+          du -sh .repo prebuilts external frameworks > "$CI_LOG_DIR/source-sizes.log"
 
       - name: Build recovery and validation tools
         shell: bash

@@ -14,7 +14,7 @@ source /etc/os-release
 [[ $ID == ubuntu && $VERSION_ID == 24.04 ]] || fail 'requires Ubuntu 24.04'
 : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 : "${RUNNER_TEMP:?RUNNER_TEMP is required}"
-MIN_FREE_GIB=${MIN_FREE_GIB:-80}
+MIN_FREE_GIB=${MIN_FREE_GIB:-100}
 [[ $MIN_FREE_GIB =~ ^[1-9][0-9]*$ ]] || fail 'MIN_FREE_GIB must be a positive integer'
 
 resources() {

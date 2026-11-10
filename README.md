@@ -19,7 +19,8 @@ gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
 
 构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
 默认同步与编译并发均为 2，Soong Go 内存目标 6 GiB，swap 总计约 8 GiB，禁用 ccache。
-runner 会按白名单释放无关 SDK 空间，并在编译前检查至少 25 GiB 剩余空间；
+runner 会按白名单释放无关 SDK 空间，分配 swap 后为首次同步保留至少 100 GiB，
+并在编译前检查至少 25 GiB 剩余空间；
 阶段超时或磁盘余量不足会终止任务并上传诊断。
 
 厂商载荷从本仓库现有 `v1.0.0/recovery.img` 恢复，验证整镜像及清单内每个文件的 SHA-256；
