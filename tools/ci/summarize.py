@@ -20,7 +20,8 @@ def summarize(logs, source):
         "## YARP CI 性能与进度",
         "",
         f"编译并发 {os.environ.get('JOBS', '?')}；"
-        f"同步并发 {os.environ.get('SYNC_JOBS', '?')}；"
+        f"同步网络并发 {os.environ.get('SYNC_JOBS', '?')}、"
+        f"checkout 并发 {os.environ.get('SYNC_CHECKOUT_JOBS', '?')}；"
         f"Soong Go 内存目标 {os.environ.get('SOONG_GOMEMLIMIT', '?')}；"
         f"ccache 上限 {os.environ.get('CCACHE_MAX_SIZE', '?')}。",
         "",
@@ -74,6 +75,18 @@ def summarize(logs, source):
             f"{maximum_swap} MiB | {minimum_disk:.1f} GiB |"
         )
     lines += ["", "资源数据为每 30 秒采样，可能漏掉短时峰值。"]
+
+    restore = logs / "cache-restore.json"
+    if restore.is_file():
+        try:
+            state = json.loads(restore.read_text(encoding="utf-8"))
+            if "restored" in state:
+                restored = "已恢复" if state["restored"] else "未恢复"
+                lines += ["", f"ccache 历史缓存：{restored}；精确键命中：{state.get('exact_hit', 'unknown')}。"]
+                if not state["restored"]:
+                    lines += ["以下命中可能来自本轮内部重复编译，不能视为跨运行缓存复用。"]
+        except (OSError, ValueError, TypeError) as error:
+            print(f"Cannot summarize cache restore: {error}")
 
     stats = source / "logs" / "ccache-after.txt"
     if stats.is_file():

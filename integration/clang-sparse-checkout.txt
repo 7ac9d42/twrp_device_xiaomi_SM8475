@@ -1,10 +1,11 @@
 /*
-!/clang-3289846/
-!/clang-r522817/
-!/clang-r536225/
-!/docs/
-!/profiles/
-!/mlgo-models/
+!/*/
+/clang-r547379/
+/clang-stable/
+/llvm-binutils-stable/
+/soong/
+/embedded-sysroots/
+/kleaf/
 /clang-r530567/
 !/clang-r530567/*
 /clang-r530567/bin/

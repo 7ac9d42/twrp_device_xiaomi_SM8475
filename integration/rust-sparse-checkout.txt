@@ -1,0 +1,7 @@
+/*
+!/darwin-x86/
+!/windows-x86/
+/linux-x86/
+!/linux-x86/*/
+/linux-x86/1.83.0/
+/linux-x86/stable/

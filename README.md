@@ -25,8 +25,14 @@ gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
 ```
 
 构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
-默认同步并发为 8、编译并发为 4，Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
-通过 Actions cache 持久化最多 5 GiB 的 ccache；源码和 `out/` 不做整体缓存。
+固定 repo v2.71，同步网络并发为 16、checkout 并发为 4，编译并发为 4；
+Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
+clang 与 Rust 先取浅层元数据、配置 sparse，再和其余项目共用一个 checkout 池；
+保留主 clang、bindgen clang 及当前 Rust，排除 Rust 的 Darwin、Windows 和旧 Linux 版本。
+通过 Actions cache 在同步前恢复最多 5 GiB 的 ccache；编译前仍要求至少 25 GiB 可用空间。
+clang 单项目 Git 对象库另按精确提交和 sparse 清单缓存，最多 3 GiB，超出则跳过保存；
+其余源码、完整 `.repo` 和 `out/` 不做整体缓存。
+ccache 优先恢复同工具链缓存，再回退到同平台缓存，由编译器内容校验保证正确性。
 缓存受 GitHub 分支作用域限制；迁移到尚无兼容缓存的分支（包括首次合入 main）时，
 首轮仍需填充缓存，后续运行才能获得暖缓存收益。
 runner 会按白名单释放无关 SDK 空间，分配 swap 后为首次同步保留至少 100 GiB，
@@ -56,6 +62,11 @@ CI 不创建 Release。CI 通过仅代表构建与静态检查通过，不能替
 未参与构建。下载产物中的 resolved manifest 已核对，所有实际项目的提交均与锁定清单一致。
 
 ### CI 性能实测
+
+2026-11-15 的 #6 同步为 38:50，其中独立 clang checkout 为 23:24；同步后只剩约
+27 GiB，旧流程因低于 30 GiB 而跳过 ccache 恢复，最终命中率 36.67% 主要来自本轮重复编译。
+本轮优化针对串行工具链下载、Rust 多平台检出和缓存恢复时机，尚未经新 CI 实测；
+以下冷、暖缓存数据属于之前的配置，不代表新方案的提速结果。
 
 同一锁定源码、标准四核 runner 的两次优化后构建均通过镜像验证，设备树提交为
 `d61e65d17d385fd571b20c0fa07eac4efdc01dd0`。

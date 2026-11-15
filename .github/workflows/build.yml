@@ -16,7 +16,8 @@ jobs:
     timeout-minutes: 360
     env:
       JOBS: '4'
-      SYNC_JOBS: '8'
+      SYNC_JOBS: '16'
+      SYNC_CHECKOUT_JOBS: '4'
       SOONG_GOMEMLIMIT: 6GiB
       USE_CCACHE: 'true'
       CCACHE_MAX_SIZE: 5Gi
@@ -69,31 +70,6 @@ jobs:
             2>&1 | tee "$CI_LOG_DIR/vendor-extraction.log"
           python3 -I tools/extract-files.py --root "$SOURCE_ROOT" --check
 
-      - name: Initialize the locked manifest
-        working-directory: ${{ env.SOURCE_ROOT }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          bash "$GITHUB_WORKSPACE/tools/ci/run-stage.sh" init \
-            repo init \
-            -u "https://github.com/$GITHUB_REPOSITORY.git" -b "$GITHUB_SHA" \
-            -m integration/manifest.lock.xml --depth=1 --partial-clone \
-            --clone-filter=blob:none --no-clone-bundle
-          mkdir -p device/xiaomi/liuqin
-          rsync -a --exclude=.git --exclude=.github "$GITHUB_WORKSPACE/" device/xiaomi/liuqin/
-
-      - name: Synchronize minimal sources
-        id: sync
-        shell: bash
-        run: |
-          set -euo pipefail
-          bash tools/ci/run-stage.sh sync bash "$SOURCE_ROOT/device/xiaomi/liuqin/tools/sync.sh"
-          cd "$SOURCE_ROOT"
-          repo manifest -r -o "$RUNNER_TEMP/yarp-output/manifest.lock.xml"
-          df -h . | tee "$CI_LOG_DIR/disk-after-sync.log"
-          free -h | tee "$CI_LOG_DIR/memory-after-sync.log"
-          du -sh .repo prebuilts external frameworks > "$CI_LOG_DIR/source-sizes.log"
-
       - name: Prepare compiler cache restore
         id: cache-config
         if: env.USE_CCACHE == 'true'
@@ -108,9 +84,11 @@ jobs:
             'patches/**' 'integration/**' 'proprietary-files.json' \
             'tools/build.sh' 'tools/apply-patches.py' 'tools/extract-files.py' \
             | sort -z | xargs -0 sha256sum | sha256sum | cut -d ' ' -f1)
-          prefix="yarp-ccache-v1-$RUNNER_OS-$RUNNER_ARCH-$clang_revision-"
+          fallback_prefix="yarp-ccache-v1-$RUNNER_OS-$RUNNER_ARCH-"
+          prefix="$fallback_prefix$clang_revision-"
           {
             printf 'prefix=%s\n' "$prefix"
+            printf 'fallback-prefix=%s\n' "$fallback_prefix"
             printf 'key=%s%s-%s\n' "$prefix" "$manifest_hash" "$config_hash"
           } >> "$GITHUB_OUTPUT"
           df -h "$CCACHE_DIR" | tee "$CI_LOG_DIR/disk-before-cache-restore.log"
@@ -134,7 +112,9 @@ jobs:
         with:
           path: ${{ runner.temp }}/yarp-source/out/ccache
           key: ${{ steps.cache-config.outputs.key }}
-          restore-keys: ${{ steps.cache-config.outputs.prefix }}
+          restore-keys: |
+            ${{ steps.cache-config.outputs.prefix }}
+            ${{ steps.cache-config.outputs.fallback-prefix }}
 
       - name: Record compiler cache restore
         if: always()
@@ -142,11 +122,71 @@ jobs:
         shell: bash
         env:
           CACHE_OUTCOME: ${{ steps.cache-restore.outcome }}
+          CACHE_EXACT_HIT: ${{ steps.cache-restore.outputs.cache-hit }}
+          CACHE_MATCHED_KEY: ${{ steps.cache-restore.outputs.cache-matched-key }}
         run: |
           now=$(date +%s)
-          printf '{"stage":"cache-restore","start_epoch":%s,"end_epoch":%s,"status":"%s"}\n' \
-            "${CACHE_RESTORE_START:-$now}" "$now" "${CACHE_OUTCOME:-skipped}" > "$CI_LOG_DIR/cache-restore.json"
+          found=false
+          [[ -z "$CACHE_MATCHED_KEY" ]] || found=true
+          printf 'Compiler cache: outcome=%s restored=%s exact-hit=%s\n' \
+            "${CACHE_OUTCOME:-skipped}" "$found" "${CACHE_EXACT_HIT:-false}"
+          printf '{"stage":"cache-restore","start_epoch":%s,"end_epoch":%s,"status":"%s","restored":%s,"exact_hit":"%s"}\n' \
+            "${CACHE_RESTORE_START:-$now}" "$now" "${CACHE_OUTCOME:-skipped}" "$found" "${CACHE_EXACT_HIT:-false}" > "$CI_LOG_DIR/cache-restore.json"
           df -h "$CCACHE_DIR" | tee "$CI_LOG_DIR/disk-after-cache-restore.log"
+
+      - name: Initialize the locked manifest
+        working-directory: ${{ env.SOURCE_ROOT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash "$GITHUB_WORKSPACE/tools/ci/run-stage.sh" init \
+            repo init \
+            -u "https://github.com/$GITHUB_REPOSITORY.git" -b "$GITHUB_SHA" \
+            -m integration/manifest.lock.xml --repo-rev=v2.71 --depth=1 --partial-clone \
+            --clone-filter=blob:none --no-clone-bundle
+          mkdir -p device/xiaomi/liuqin
+          rsync -a --exclude=.git --exclude=.github "$GITHUB_WORKSPACE/" device/xiaomi/liuqin/
+
+      - name: Prepare exact clang object cache
+        id: clang-cache-config
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          revision=$(python3 -I -c 'import xml.etree.ElementTree as E; print(E.parse("integration/manifest.lock.xml").find("./project[@path=\"prebuilts/clang/host/linux-x86\"]").attrib["revision"])')
+          selection=$(sha256sum integration/clang-sparse-checkout.txt | cut -d ' ' -f1)
+          printf 'key=yarp-clang-v1-repo271-%s-%s-%s-%s\n' "$RUNNER_OS" "$RUNNER_ARCH" "$revision" "$selection" >> "$GITHUB_OUTPUT"
+          printf 'CLANG_CACHE_RESTORE_START=%s\n' "$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Restore exact clang object cache
+        id: clang-cache-restore
+        if: steps.clang-cache-config.outputs.key != ''
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/yarp-source/.repo/project-objects/platform/prebuilts/clang/host/linux-x86.git
+          key: ${{ steps.clang-cache-config.outputs.key }}
+
+      - name: Synchronize minimal sources
+        id: sync
+        shell: bash
+        env:
+          CLANG_CACHE_OUTCOME: ${{ steps.clang-cache-restore.outcome }}
+          CLANG_CACHE_HIT: ${{ steps.clang-cache-restore.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          now=$(date +%s)
+          printf '{"stage":"clang-cache-restore","start_epoch":%s,"end_epoch":%s,"status":"%s","exact_hit":"%s"}\n' \
+            "${CLANG_CACHE_RESTORE_START:-$now}" "$now" "${CLANG_CACHE_OUTCOME:-skipped}" "${CLANG_CACHE_HIT:-false}" > "$CI_LOG_DIR/cache-clang-restore.json"
+          bash tools/ci/run-stage.sh sync bash "$SOURCE_ROOT/device/xiaomi/liuqin/tools/sync.sh"
+          cd "$SOURCE_ROOT"
+          repo manifest -r -o "$RUNNER_TEMP/yarp-output/manifest.lock.xml"
+          df -h . | tee "$CI_LOG_DIR/disk-after-sync.log"
+          free -h | tee "$CI_LOG_DIR/memory-after-sync.log"
+          du -sh .repo prebuilts external frameworks \
+            .repo/project-objects/platform/prebuilts/clang/host/linux-x86.git \
+            prebuilts/clang/host/linux-x86 prebuilts/rust > "$CI_LOG_DIR/source-sizes.log"
 
       - name: Build recovery and validation tools
         id: build
@@ -216,13 +256,50 @@ jobs:
           printf '{"stage":"cache-save","start_epoch":%s,"end_epoch":%s,"status":"%s"}\n' \
             "${CACHE_SAVE_START:-$now}" "$now" "${CACHE_OUTCOME:-skipped}" > "$CI_LOG_DIR/cache-save.json"
 
+      - name: Check clang object cache budget
+        id: clang-cache-save-config
+        if: always() && steps.verify.outcome == 'success' && steps.clang-cache-restore.outputs.cache-hit != 'true' && steps.clang-cache-config.outputs.key != ''
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'CLANG_CACHE_SAVE_START=%s\n' "$(date +%s)" >> "$GITHUB_ENV"
+          store="$SOURCE_ROOT/.repo/project-objects/platform/prebuilts/clang/host/linux-x86.git"
+          project="$SOURCE_ROOT/.repo/projects/prebuilts/clang/host/linux-x86.git"
+          if [[ $(realpath "$project/objects") != "$(realpath "$store/objects")" ]]; then
+            printf 'Skip clang cache save: project uses a different object store.\n'
+            exit 0
+          fi
+          size=$(du -sk "$store" | cut -f1)
+          available=$(df -Pk "$store" | awk 'NR==2 {print $4}')
+          printf 'Clang object cache: %s KiB; limit 3 GiB; free %s KiB.\n' "$size" "$available"
+          if (( size <= 3 * 1024 * 1024 && available >= size + 3 * 1024 * 1024 )); then
+            printf 'save=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'Skip clang cache save: exceeds 3 GiB cache budget or archive space reserve.\n'
+          fi
+
+      - name: Save exact clang object cache
+        id: clang-cache-save
+        if: always() && steps.clang-cache-save-config.outputs.save == 'true'
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/yarp-source/.repo/project-objects/platform/prebuilts/clang/host/linux-x86.git
+          key: ${{ steps.clang-cache-config.outputs.key }}
+
       - name: Collect diagnostics
         if: always()
         shell: bash
         env:
           SYNC_OUTCOME: ${{ steps.sync.outcome }}
+          CLANG_CACHE_SAVE_OUTCOME: ${{ steps.clang-cache-save.outcome }}
         run: |
           mkdir -p "$RUNNER_TEMP/yarp-logs"
+          now=$(date +%s)
+          printf '{"stage":"clang-cache-save","start_epoch":%s,"end_epoch":%s,"status":"%s"}\n' \
+            "${CLANG_CACHE_SAVE_START:-$now}" "$now" "${CLANG_CACHE_SAVE_OUTCOME:-skipped}" > "$CI_LOG_DIR/cache-clang-save.json"
           df -h > "$RUNNER_TEMP/yarp-logs/disk-final.log"
           free -h > "$RUNNER_TEMP/yarp-logs/memory-final.log"
           if [[ "$SYNC_OUTCOME" == success && -d "$SOURCE_ROOT/.repo" ]]; then
