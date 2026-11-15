@@ -64,7 +64,7 @@ class RustCacheTests(unittest.TestCase):
         return (self.root / "output").read_text()
 
     def make_store(self, staging=True):
-        path = (self.root / "yarp-rust-cache/rustc" if staging else self.source / "out/rustc")
+        path = (self.root / "yarp-rust-cache/rustc" if staging else self.source / "out/soong/rustc")
         path.mkdir(parents=True)
         (path / "fixture.bin").write_bytes(b"incremental fixture")
         return path
@@ -79,11 +79,30 @@ class RustCacheTests(unittest.TestCase):
                 subprocess.run(["bash", "-n"], input=script, text=True, check=True, timeout=5)
         subprocess.run(["bash", "-n", str(TREE / "tools/build.sh")], check=True, timeout=5)
 
+    def test_measurement_uses_soong_runtime_path(self):
+        # 只执行本项目的尺寸函数；旧目录作为干扰项，不启动 Android 构建。
+        definition = re.search(r"^rust_size_kib\(\) \{\n.*?^\}",
+                               (TREE / "tools/build.sh").read_text(), re.M | re.S)[0]
+        legacy = self.source / "out/rustc"
+        legacy.mkdir(parents=True)
+        legacy.joinpath("legacy.bin").write_bytes(b"wrong directory")
+
+        def measured():
+            result = subprocess.run(["bash", "-euo", "pipefail", "-c", definition + "\nrust_size_kib"],
+                                    cwd=self.source, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return int(result.stdout)
+
+        self.assertEqual(measured(), 0)
+        self.make_store(staging=False)
+        self.assertGreater(measured(), 0)
+
     def test_restore_success_moves_complete_directory(self):
         store = self.make_store()
         self.assertTrue(self.activate()["restored"])
         self.assertFalse(store.exists())
-        self.assertTrue((self.source / "out/rustc/fixture.bin").is_file())
+        self.assertTrue((self.source / "out/soong/rustc/fixture.bin").is_file())
+        self.assertFalse((self.source / "out/rustc").exists())
 
     def test_restore_miss_failure_and_over_budget_are_isolated(self):
         for updates in ({"RUST_CACHE_HIT": "false"}, {"RUST_CACHE_OUTCOME": "failure"},
@@ -96,7 +115,7 @@ class RustCacheTests(unittest.TestCase):
                 store = self.make_store()
                 self.assertFalse(self.activate()["restored"])
                 self.assertFalse(store.exists())
-                self.assertFalse((self.source / "out/rustc").exists())
+                self.assertFalse((self.source / "out/soong/rustc").exists())
                 self.assertTrue(list(self.root.glob("yarp-rust-cache-incomplete.*/rustc/fixture.bin")))
                 self.env = original
 
@@ -104,7 +123,7 @@ class RustCacheTests(unittest.TestCase):
         self.make_store()
         self.stub("du", "exit 1\n")
         self.assertFalse(self.activate()["restored"])
-        self.assertFalse((self.source / "out/rustc").exists())
+        self.assertFalse((self.source / "out/soong/rustc").exists())
 
     def test_key_generation_failure_never_publishes_key(self):
         (self.root / "integration").mkdir()
@@ -158,7 +177,7 @@ class RustCacheTests(unittest.TestCase):
         self.stub("git", "printf 'integration/manifest.lock.xml\\0BoardConfig.mk\\0'\n")
         first = self.run_step("Prepare exact Rust incremental cache")
         self.assertIn("restore=true", first)
-        self.assertIn("yarp-rust-v1-Linux-X64-rust-sha-", first)
+        self.assertIn("yarp-rust-v2-Linux-X64-rust-sha-", first)
         config.write_text("TARGET_ARCH := arm\n")
         second = self.run_step("Prepare exact Rust incremental cache")
         self.assertNotEqual(first, second)

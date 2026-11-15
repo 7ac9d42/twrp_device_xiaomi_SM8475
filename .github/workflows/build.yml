@@ -219,9 +219,9 @@ jobs:
               'bootctrl/**' 'gpt-utils/**' 'recovery/**' 'prebuilt/**' 'kernel/**' \
               'patches/**' 'integration/**' 'proprietary-files.json' 'tools/**' \
               '.github/workflows/build.yml' | sort -z | xargs -0 sha256sum || exit 1
-            printf 'ROOT=%s\nOUT_DIR=out\nSOONG_RUSTC_INCREMENTAL=true\n' "$SOURCE_ROOT"
+            printf 'ROOT=%s\nOUT_DIR=out\nRUST_INCREMENTAL_DIR=out/soong/rustc\nSOONG_RUSTC_INCREMENTAL=true\n' "$SOURCE_ROOT"
           } | sha256sum | cut -d ' ' -f1)
-          printf 'key=%s\n' "yarp-rust-v1-$RUNNER_OS-$RUNNER_ARCH-$revision-$config_hash" >> "$GITHUB_OUTPUT"
+          printf 'key=%s\n' "yarp-rust-v2-$RUNNER_OS-$RUNNER_ARCH-$revision-$config_hash" >> "$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/yarp-rust-cache"
           available=$(df -Pk "$SOURCE_ROOT" | awk 'NR==2 {print $4}')
           # 3 GiB cache + 3 GiB transfer space + the build's 25 GiB reserve.
@@ -258,9 +258,9 @@ jobs:
             && size=$(du -sk "$store" | cut -f1) \
             && available=$(df -Pk "$SOURCE_ROOT" | awk 'NR==2 {print $4}') \
             && (( size > 0 && size <= 3 * 1024 * 1024 && available >= 25 * 1024 * 1024 )); then
-            mkdir -p "$SOURCE_ROOT/out"
-            [[ ! -e "$SOURCE_ROOT/out/rustc" && ! -L "$SOURCE_ROOT/out/rustc" ]]
-            mv -- "$store" "$SOURCE_ROOT/out/rustc"
+            mkdir -p "$SOURCE_ROOT/out/soong"
+            [[ ! -e "$SOURCE_ROOT/out/soong/rustc" && ! -L "$SOURCE_ROOT/out/soong/rustc" ]]
+            mv -- "$store" "$SOURCE_ROOT/out/soong/rustc"
             restored=true
           elif [[ -e "$store" || -L "$store" ]]; then
             incomplete=$(mktemp -d "$RUNNER_TEMP/yarp-rust-cache-incomplete.XXXXXX")
@@ -308,7 +308,7 @@ jobs:
             printf 'Skip Rust save: requires a successful verified build and a new exact key.\n'
             exit 0
           fi
-          store="$SOURCE_ROOT/out/rustc"
+          store="$SOURCE_ROOT/out/soong/rustc"
           [[ -d "$store" && ! -L "$store" ]] || exit 0
           size=$(du -sk "$store" | cut -f1)
           available=$(df -Pk "$store" | awk 'NR==2 {print $4}')

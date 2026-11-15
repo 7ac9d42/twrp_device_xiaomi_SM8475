@@ -73,7 +73,7 @@ def summarize_rust(logs, source):
     for phase in ("before", "after"):
         path = source / f"logs/rust-cache-{phase}-kib.txt"
         sizes.append(str(int(path.read_text().strip())) if path.is_file() else "未知")
-    lines.append(f"完整 out/rustc：构建前 {sizes[0]} KiB，构建后 {sizes[1]} KiB；保存上限 3 GiB。")
+    lines.append(f"完整 out/soong/rustc：构建前 {sizes[0]} KiB，构建后 {sizes[1]} KiB；保存上限 3 GiB。")
     budget = logs / "rust-cache-save-budget.json"
     if budget.is_file():
         state = json.loads(budget.read_text(encoding="utf-8"))

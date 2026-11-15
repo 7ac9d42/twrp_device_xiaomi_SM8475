@@ -25,8 +25,9 @@ unset OUT_DIR_COMMON_BASE
 jobs="${JOBS:-4}"
 backend_jobs="${BACKEND_JOBS:-6}"
 mkdir -p logs artifacts
+# Locked Soong PathForOutput(ctx, "rustc") is rooted at out/soong.
 rust_size_kib() {
-    if [[ -d out/rustc ]]; then du -sk out/rustc | cut -f1; else printf '0\n'; fi
+    if [[ -d out/soong/rustc ]]; then du -sk out/soong/rustc | cut -f1; else printf '0\n'; fi
 }
 printf '%s\n' "$(rust_size_kib)" > logs/rust-cache-before-kib.txt
 report_cache_stats() {
