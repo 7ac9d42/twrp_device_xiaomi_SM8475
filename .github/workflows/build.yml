@@ -176,6 +176,12 @@ jobs:
           CLANG_CACHE_HIT: ${{ steps.clang-cache-restore.outputs.cache-hit }}
         run: |
           set -euo pipefail
+          store="$SOURCE_ROOT/.repo/project-objects/platform/prebuilts/clang/host/linux-x86.git"
+          if [[ -e "$store" && ( "$CLANG_CACHE_OUTCOME" != success || "$CLANG_CACHE_HIT" != true ) ]]; then
+            incomplete=$(mktemp -d "$RUNNER_TEMP/yarp-clang-cache-incomplete.XXXXXX")
+            mv -- "$store" "$incomplete/"
+            printf 'Isolated incomplete clang cache in %s; use a cold sync.\n' "$incomplete"
+          fi
           now=$(date +%s)
           printf '{"stage":"clang-cache-restore","start_epoch":%s,"end_epoch":%s,"status":"%s","exact_hit":"%s"}\n' \
             "${CLANG_CACHE_RESTORE_START:-$now}" "$now" "${CLANG_CACHE_OUTCOME:-skipped}" "${CLANG_CACHE_HIT:-false}" > "$CI_LOG_DIR/cache-clang-restore.json"
