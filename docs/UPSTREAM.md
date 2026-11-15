@@ -34,7 +34,25 @@ Android 17 解密实现来自 TWRP-Test 上游，本项目提供 liuqin 的设�
 
 Recovery 的 `LoadVendorModules()` 已在发布 `twrp.modules.loaded` 前显式卸载本函数挂载的分区、禁用 scope guard 并恢复可选设备运行资源，因此删除旧 module-order 补丁。GUI2 的中文目录编译在 `libgui2.so` 中；`gui2/resources/Android.bp` 的 `gui2_fonts` 使用根目录 `prebuilt_res`，安装到 `/res/fonts/`。镜像验证改查 GUI2/LVGL/codec 运行库、中文目录和三个 TTF 字体，替代旧 `/twres/languages/zh_CN.xml` 断言；现有触控固件哈希、ELF、fstab、VINTF、init、AVB 与安全服务顺序检查继续保留。
 
-2026-11-10 的 [CI #2](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42769591941) 已完成标准 Ubuntu 24.04 hosted runner 冷缓存编译，并通过镜像格式、ELF 依赖、GUI2 资源、触控固件、fstab、VINTF、init、AVB 与启动配置检查。本地下载后已核对镜像 SHA-256 和 resolved manifest。锁定清单共 398 个项目，实际 Linux 清单为 397 个；差异仅为带 `notdefault,platform-darwin` 分组的 `prebuilts/bazel/darwin-x86_64`，其余项目名称和提交全部一致。镜像哈希及设备树提交见 README；新版触控、密码解密、MTP 和重启系统尚未经真机验证。
+2026-11-10 的 [CI #2](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42769591941) 已完成标准 Ubuntu 24.04 hosted runner 冷缓存编译，并通过镜像格式、ELF 依赖、GUI2 资源、触控固件、fstab、VINTF、init、AVB 与启动配置检查。本地下载后已核对镜像 SHA-256 和 resolved manifest。锁定清单共 398 个项目，实际 Linux 清单为 397 个；差异仅为带 `notdefault,platform-darwin` 分组的 `prebuilts/bazel/darwin-x86_64`，其余项目名称和提交全部一致。镜像哈希及设备树提交见 README。此处是 #2 的历史验证范围；后续 #8 已通过启动、metadata、用户 0 密码解密和内部存储目录访问，触控可用但迟就绪，MTP 和重启系统仍未验收。后续维护改动不能沿用 #8 的真机结论。
+
+## 本地维护差异与更新边界
+
+2026-11-15 核对时，上述 manifest、Recovery 与 system/core 的锁定提交仍等于所用
+`twrp-16.0` 分支头。四组补丁尚未被相应来源吸收；cgroup-runtime 服务于真实运行库，
+crash-dump/native-accessor 服务于原生诊断，runtime-property-literal 修正动态属性消费。
+不因追新而移除这些依赖，也不把本次查询结果视为永久状态。
+
+`gpt-utils` 保留原来源及版权，本地补全了完整 I/O、GPT 头/数组校验与几何范围检查，
+防止短 I/O 误报成功及未校验字段进入分配、CRC 和遍历；没有替换 boot control 机制。
+可用 `python3 -I tools/validation/test_gpt_utils.py` 在具备 GCC/G++ 的 Linux 主机运行
+ASan/UBSan 合成 I/O 回归，不访问真实块设备。Android 构建和设备行为仍需单独验证。
+USB 配置仅移除没有消费者的两条 g2 目录创建，保留 g1 的 ADB/MTP/fastboot 流程。
+
+更新锁定源码时，应一并核对官方 minimal 项目增删、工具链 sparse、补丁 JSON 基线和
+镜像验证断言。SDK、源码语句与资源路径断言针对当前构建基线，不是设备可运行 ROM 的白名单；
+上游等价改写时应同步调整检查，而非强迫上游保留旧写法。厂商载荷清单与固定提取镜像
+也须成套维护，不能只更新其中一项。当前没有证据要求整体更换已通过 #8 解密验证的载荷。
 
 ## 测试包致谢
 
