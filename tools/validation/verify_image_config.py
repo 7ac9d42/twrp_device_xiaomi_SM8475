@@ -18,7 +18,7 @@ for p in overlay.rglob("*"):
 assert not mismatches,("Overlay absent or stale",mismatches)
 root=check/"root"
 props=dict(line.split("=",1) for line in (root/"prop.default").read_text().splitlines() if "=" in line and not line.startswith("#"))
-wanted={"ro.build.version.release":"17","ro.build.version.sdk":"36","ro.build.version.security_patch":"2026-08-01","ro.vendor.build.security_patch":"2026-02-01","ro.twrp.device.name":"liuqin","ro.board.platform":"taro","ro.virtual_ab.enabled":"true","ro.debuggable":"1","vendor.gatekeeper.disable_spu":"true"}
+wanted={"ro.build.version.release":"17","ro.build.version.sdk":"36","ro.build.version.security_patch":"2026-10-01","ro.vendor.build.security_patch":"2026-02-01","ro.twrp.device.name":"liuqin","ro.board.platform":"taro","ro.virtual_ab.enabled":"true","ro.debuggable":"1","vendor.gatekeeper.disable_spu":"true"}
 assert all(props.get(k)==v for k,v in wanted.items()),{k:props.get(k) for k in wanted}
 manifest=ET.parse(root/"vendor/etc/vintf/manifest.xml").getroot()
 hal_names={h.findtext("name") for h in manifest.findall("hal")}
