@@ -58,6 +58,10 @@ jobs:
             rsync unzip xsltproc zip zlib1g-dev
           sudo -n apt-get clean
 
+      - name: Test GPT metadata and I/O handling
+        shell: bash
+        run: timeout --kill-after=5s 2m python3 -I tools/validation/test_gpt_utils.py
+
       - name: Verify and extract fixed vendor payloads
         shell: bash
         run: |

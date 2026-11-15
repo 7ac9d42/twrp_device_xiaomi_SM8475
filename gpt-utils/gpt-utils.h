@@ -134,6 +134,8 @@ struct gpt_disk {
 	char devpath[PATH_MAX];
 	//Block size of disk
 	uint32_t block_size;
+	//Size of disk in bytes, used to validate GPT ranges
+	uint64_t disk_size;
 	uint32_t is_initialized;
 };
 
