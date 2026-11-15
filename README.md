@@ -29,9 +29,6 @@ gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
 构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
 固定 repo v2.71，同步网络并发为 16、checkout 并发为 4，Soong 前端并发为 4、最终 Ninja 后端并发为 6；
 Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
-Rust 增量缓存实验使用上游 `SOONG_RUSTC_INCREMENTAL`，仅复用 `out/soong/rustc`，独立限额 3 GiB；
-只接受精确缓存键和完整恢复，失败则正常冷编译，不缓存整个 `out/` 或跳过构建检查。
-该原生模式会取消固定的 `codegen-units=1`，因此须以相同配置的冷暖两轮比较，不能把与旧模式的差异全算作缓存收益。
 clang 与 Rust 先取浅层元数据、配置 sparse，再和其余项目共用一个 checkout 池；
 保留主 clang、bindgen clang 及当前 Rust，排除 Rust 的 Darwin、Windows 和旧 Linux 版本。
 通过 Actions cache 在同步前恢复最多 5 GiB 的 ccache；编译前仍要求至少 25 GiB 可用空间。
@@ -139,6 +136,21 @@ Rust、链接和生成步骤也不受 C/C++ ccache 全命中覆盖。因此不�
 拆分多个 hosted job 则会重复同步和前端工作。#7/#8 同提交同并发的构建子阶段仍相差约 1.5 倍，
 小幅优化必须在相同精确缓存命中状态下交替比较阶段及总耗时，并核对内存、swap 和 PSI。
 #7/#8 是选择新参数的历史依据，#9 的实测结果见前述，不把不同缓存或 runner 状态当作严格对照。
+
+### Rust 增量缓存实验（未保留）
+
+2026-11-15 的 [CI #10](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/43722309004)
+和 [CI #11](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/43726271821)
+均通过构建与镜像检查。#10 最初误将 `out/rustc` 作为缓存目录，未保存缓存；
+追踪锁定 Soong 的 `PathForOutput` 后，#11 修正为实际的 `out/soong/rustc`。
+#11 同步命令阶段 10:16、构建 25:39，320 个 Rust 动作耗时合计 2646.023 秒
+（并行动作相加，不是墙钟），ccache 可缓存调用命中 13238/13238。
+
+完整 Rust 增量目录为 4617032 KiB（约 4.40 GiB），超过本次实验自行设定的 3 GiB 保存预算，
+因此没有上传，也未执行没有暖缓存可恢复的重复构建。3 GiB 是本项目实验预算，不是 GitHub 平台上限；
+本结果不证明更大预算下没有收益。原生 `SOONG_RUSTC_INCREMENTAL` 还会取消固定的
+`codegen-units=1`，冷构建耗时不能隔离缓存收益。由于未取得预算内的暖缓存净收益证据，
+已撤回该开关、缓存步骤、专项统计与测试，维持前述已验证流程。#10/#11 未进行设备刷写或真机验收。
 
 ## YARP 已验证范围
 
