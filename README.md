@@ -8,6 +8,13 @@
 Recovery 与解密主体来自上游；本项目保留 liuqin 硬件配置、安全服务集成和有日志依据的修复。
 上游仓库、产品和构建变量仍沿用 TWRP 命名。
 
+系统 release、系统安全补丁和 vendor 安全补丁通过上游 `TW_OVERRIDE_SYSTEM_PROPS`
+在启动时读取已安装的 system/vendor，不再固定编译版本和补丁日期；SDK 保持上游构建值。
+QSEE、Keymaster、KeyMint、Gatekeeper 和 keystore2 等待上游 `twrp.storage.ready=1`，
+该通知位于属性覆盖与临时挂载清理之后、data 解密之前。
+锁定上游的属性名单存在二次字符串化缺陷，以一行补丁修正消费点，动态读取流程不变。
+当前动态属性方案通过本地配置、宏消费探针和启动检查，尚未经新镜像构建及真机验证。
+
 ## CI 构建
 
 在 [Actions](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/workflows/build.yml)
@@ -91,6 +98,15 @@ swap 使用峰值约 176 / 121 MiB，磁盘最低余量约 26 GiB。
 系统补丁日期对齐 2026-10-01 后，A 槽刷入及重启 Recovery 成功，分区哈希与产物一致；
 metadata 解密成功，data 通过解密映射设备以 F2FS 挂载。B 槽保持不变。
 未输入锁屏密码，用户 0 的凭据加密数据、内部存储访问、MTP 和重启系统仍未经本轮验证。
+
+## 已知限制与待核实项
+
+- 锁定上游的安装后自动重装只在无 `update-binary` 的成功 payload 安装分支调用；
+  独立 A/B recovery 分支复制安装后的当前槽 recovery 到另一槽，未保存安装前的镜像，
+  自动调用方也未检查重装返回值。因此该选项不能保证刷包后仍保留 YARP。
+  本次采集仅保留 Fox 会话，未取得导致覆盖的 YARP 刷包日志，不能断言实际命中了哪条路径。
+- 解密页可见不代表触控固件已经就绪。上游已有输入热插拔支持；目前缺少同一次 YARP
+  启动的驱动、固件、输入事件和 GUI 时序，不根据 Fox 日志添加等待或重扫补丁。
 
 ## 旧版 TWRP 已验证范围
 

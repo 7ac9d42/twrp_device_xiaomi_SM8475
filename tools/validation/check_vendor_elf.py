@@ -32,7 +32,7 @@ def elf(p):
   name=cols[7].replace("@@","@")
   if cols[6]=="UND":
    if cols[4]!="WEAK":undefined.add(name)
-  else:
+  elif cols[4] in ("GLOBAL","WEAK","UNIQUE","GNU_UNIQUE") and cols[5] in ("DEFAULT","PROTECTED"):
    defined.add(name)
    if "@@" in cols[7] or "@" not in name:defined.add(name.split("@")[0])
  cache[p]=(deps,defined,undefined)

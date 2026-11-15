@@ -1,0 +1,8 @@
+diff --git a/twrp.cpp b/twrp.cpp
+--- a/twrp.cpp
++++ b/twrp.cpp
+@@ -149,3 +149,3 @@
+ #if defined(TW_OVERRIDE_SYSTEM_PROPS)
+-  stringstream override_props(EXPAND(TW_OVERRIDE_SYSTEM_PROPS));
++  stringstream override_props(TW_OVERRIDE_SYSTEM_PROPS);
+   string current_prop;

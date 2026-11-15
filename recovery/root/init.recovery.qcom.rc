@@ -21,7 +21,7 @@ on fs
     chmod 0664 /dev/ion
     chown system system /dev/ion
 
-on property:vendor.sys.listeners.registered=true
+on property:vendor.sys.listeners.registered=true && property:twrp.storage.ready=1
     start vendor.keymaster-4-1
     start vendor.keymint-qti
     start gatekeeper-1-0
@@ -32,9 +32,11 @@ on property:twrp.modules.loaded=true
     write /sys/module/firmware_class/parameters/path /firmware/image
     wait /sys/kernel/boot_adsp/boot 10
     write /sys/kernel/boot_adsp/boot 1
-    start vendor.qseecomd
     wait /sys/class/power_supply/battery/capacity 10
     start health-hal-2-1
+
+on property:twrp.modules.loaded=true && property:twrp.storage.ready=1
+    start vendor.qseecomd
 
 on boot
     setprop sys.usb.config adb

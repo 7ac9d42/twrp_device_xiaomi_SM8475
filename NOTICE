@@ -9,7 +9,8 @@ This repository uses per-file licensing. LICENSE applies to original work
 identified as MIT. Upstream files retain their copyright and license notices.
 See docs/LICENSING.md and docs/UPSTREAM.md for scope and exact revisions.
 
-TWRP module-loader patch: GPL-3.0-or-later (see upstream NOTICE).
+TWRP runtime-property-literal patch and metadata: GPL-3.0-or-later
+(copyright TeamWin; see the pinned upstream twrp.cpp license notice).
 AOSP build/configuration patches and inherited service code: Apache-2.0.
 gpt-utils and Qualcomm USB init: original BSD three-clause notices.
 tools/erofs_read.c: GPL-2.0-or-later; liberofs retains its own license.

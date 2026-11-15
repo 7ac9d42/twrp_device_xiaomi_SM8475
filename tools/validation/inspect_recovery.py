@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 """Inspect a built recovery without mounting or modifying any image."""
-import argparse, gzip, hashlib, json, pathlib, stat, struct, subprocess, shutil
+import argparse, gzip, hashlib, json, pathlib, stat, struct, subprocess, shutil, sys
+sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1]))
+from recovery_image import relative_name
 ap=argparse.ArgumentParser()
 ap.add_argument("image",type=pathlib.Path)
 ap.add_argument("--out",type=pathlib.Path,default=pathlib.Path("artifacts/image-check"))
@@ -35,15 +37,15 @@ while off+110<=len(data):
  payload=data[start:start+size];assert len(payload)==size
  off=(start+size+3)&~3
  if name=="TRAILER!!!": trailer=True;break
- path=pathlib.PurePosixPath(name)
- assert not path.is_absolute() and ".." not in path.parts,name
- name=str(path)
+ name=relative_name(name)
  entry={"name":name,"mode":oct(mode),"size":size}
  if stat.S_ISREG(mode):
   files[name]=payload;entry["sha256"]=hashlib.sha256(payload).hexdigest()
   # Extract only ELF and configuration for linkage and content checks.
   if payload[:4]==b"\x7fELF" or name.endswith((".rc",".prop",".xml",".fstab")) or "fstab" in name or "ld.config" in name or name in ("prop.default","default.prop"):
-   dest=a.out/"root"/name;dest.parent.mkdir(parents=True,exist_ok=True)
+   dest=extracted/name
+   assert dest.resolve().is_relative_to(extracted.resolve()),str(dest)
+   dest.parent.mkdir(parents=True,exist_ok=True)
    assert not dest.is_symlink(),str(dest)
    dest.write_bytes(payload)
  elif stat.S_ISLNK(mode):entry["link"]=payload.decode()

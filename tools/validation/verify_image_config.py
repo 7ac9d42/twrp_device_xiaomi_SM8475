@@ -18,7 +18,8 @@ for p in overlay.rglob("*"):
 assert not mismatches,("Overlay absent or stale",mismatches)
 root=check/"root"
 props=dict(line.split("=",1) for line in (root/"prop.default").read_text().splitlines() if "=" in line and not line.startswith("#"))
-wanted={"ro.build.version.release":"17","ro.build.version.sdk":"36","ro.build.version.security_patch":"2026-10-01","ro.vendor.build.security_patch":"2026-02-01","ro.twrp.device.name":"liuqin","ro.board.platform":"taro","ro.virtual_ab.enabled":"true","ro.debuggable":"1","vendor.gatekeeper.disable_spu":"true"}
+wanted={"ro.build.version.sdk":"36","ro.product.first_api_level":"33","ro.board.first_api_level":"31","ro.twrp.device.name":"liuqin","ro.board.platform":"taro","ro.virtual_ab.enabled":"true","ro.debuggable":"1","vendor.gatekeeper.disable_spu":"true"}
+firmware_props={k:props.get(k) for k in ["ro.build.version.release","ro.build.version.security_patch","ro.vendor.build.security_patch"]}
 assert all(props.get(k)==v for k,v in wanted.items()),{k:props.get(k) for k in wanted}
 manifest=ET.parse(root/"vendor/etc/vintf/manifest.xml").getroot()
 hal_names={h.findtext("name") for h in manifest.findall("hal")}
@@ -31,6 +32,9 @@ for name,command in {
 keystore=(root/"system/etc/init/keystore2.rc").read_text()
 assert "/system/bin/keystore2 /tmp/misc/keystore" in keystore
 recovery=(root/"system/bin/recovery").read_bytes()
+dynamic_props=["ro.build.version.release","ro.build.version.security_patch","ro.vendor.build.security_patch"]
+assert (';'.join(dynamic_props).encode()+b'\0') in recovery,"Runtime property list absent or double-stringified in recovery"
+assert "stringstream override_props(TW_OVERRIDE_SYSTEM_PROPS);" in (r/"bootable/recovery/twrp.cpp").read_text(),"Runtime property macro must be consumed as a C string literal"
 assert b"/tmp/misc/keystore/persistent.sqlite" in recovery
 assert b"/data/misc/keystore/persistent.sqlite" in recovery
 assert b"LD_CONFIG_FILE" in (root/"system/bin/linker64").read_bytes()
@@ -52,7 +56,8 @@ gui2=(root/"system/lib64/libgui2.so").read_bytes()
 assert b"zh_CN" in gui2 and "简体中文".encode() in gui2,"GUI2 Chinese catalogue absent"
 for name in ["system/bin/adbd","system/bin/fastbootd","system/lib64/libtwrpmtp-ffs.so","system/lib64/hw/bootctrl.taro.so"]:
  assert name in entries,name
-out={"overlay_files_verified":sum(p.is_file() for p in overlay.rglob("*")),"firmware_properties":wanted,
+out={"overlay_files_verified":sum(p.is_file() for p in overlay.rglob("*")),"firmware_properties":{**wanted,**firmware_props},
+ "runtime_property_overrides":dynamic_props,
  "declared_hals":sorted(hal_names),"keystore_tmpfs_protection":True,"debug_linker_config_supported":True,
  "chinese_adb_mtp_fastbootd_present":True,
  "gatekeeper_disable_spu":props["vendor.gatekeeper.disable_spu"],

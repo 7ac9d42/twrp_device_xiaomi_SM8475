@@ -46,6 +46,8 @@ TW_INCLUDE_FASTBOOTD := true
 TW_INCLUDE_REPACKTOOLS := true
 TW_INCLUDE_RESETPROP := true
 TW_INCLUDE_LIBRESETPROP := true
+TW_OVERRIDE_SYSTEM_PROPS := ro.build.version.release;ro.build.version.security_patch;ro.vendor.build.security_patch
+TW_OVERRIDE_PROPS_ADDITIONAL_PARTITIONS := /vendor
 TW_INCLUDE_LPDUMP := true
 TW_INCLUDE_LPTOOLS := true
 TW_INCLUDE_NTFS_3G := true
@@ -74,7 +76,6 @@ TW_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko nt36532_touch.ko msm_drm.ko qti_b
 TW_XIAOMI_TOUCH_PERMISSION_FIX := true
 TARGET_USES_LOGD := true
 TWRP_INCLUDE_LOGCAT := true
--include $(DEVICE_PATH)/firmware-version.mk
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/recovery/root/vendor/etc/vintf/manifest.xml
 # Real cgroup runtime in the recovery ramdisk.
 TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(TARGET_RECOVERY_ROOT_OUT)/system/lib64/libcgrouprc.so

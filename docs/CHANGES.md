@@ -4,13 +4,15 @@
 
 - 配置 liuqin 的显示、触控、亮度、USB、A/B 和动态分区。
 - 生成 header v4、无内核的独立 Recovery 镜像。
+- 按归档固件设置产品首发 API 33、board 首发 API 31，并检查最终镜像属性。
 - 集成 Qualcomm Keymaster、KeyMint、Gatekeeper、QSEE 和 boot control 服务。
 - 配置 FBE v2、wrapped key 与 metadata 加密，启用 vendor.gatekeeper.disable_spu。
 - 保留中文界面、ADB、MTP、fastbootd 和日志功能。
 
 ## 功能修复
 
-- 对齐实机 OS4.0.6.0.XMYCNXM 的系统安全补丁日期 2026-10-01，修正 metadata 密钥升级时 recovery 声明旧补丁级别的问题；vendor 补丁日期保持 2026-02-01。
+- 使用上游动态属性覆盖入口读取已安装 system 的 release、安全补丁及 vendor 安全补丁，撤销固定版本日期；安全服务等待上游 storage 就绪通知，避免提前缓存旧值。
+- 修正锁定上游动态属性名单的二次字符串化，直接消费构建生成的 C 字符串；不修改动态读取流程。
 - 在临时厂商分区卸载后通知 init 启动相关服务。
 - 为 boot control 添加 /misc 分区配置。
 - 补全两种触控面板的固件提取清单。
@@ -20,7 +22,7 @@
 
 ## 构建与工具
 
-- 添加 Android 17 版本构建配置。
+- 保留上游构建版本和 SDK，运行时仅覆盖解密所需的真实系统属性；删除随固定版本覆盖引入的 CTS 版本列表补丁。
 - 集成 crash_dump64 原生崩溃日志工具。
 - 固定最新 YARP 官方依赖及 LVGL/GUI2 资源，使用上游已修复的模块加载通知顺序。
 - 提供标准 Ubuntu 24.04 hosted runner 的手动 CI，限制并发和内存目标，检查磁盘余量并设置阶段超时。
@@ -29,3 +31,5 @@
 - 启用跨运行 ccache，上限 5 GiB，缓存位于沙箱可写的 `out/ccache`；不整体缓存源码或构建输出。
 - 同步和编译日志实时显示，提供 30 秒资源心跳、阶段计时和 Actions 性能汇总。
 - 添加镜像格式、依赖库、服务配置、GUI2 字体、VINTF 与 AVB 哈希检查。
+- 镜像提取复用跨平台相对路径检查；启动配置按 service 段验证，ELF 校验仅使用可对外解析的导出符号。
+- ERoFS 主机读取工具按上游源码提交隔离缓存，避免更新锁定版本后复用旧库。

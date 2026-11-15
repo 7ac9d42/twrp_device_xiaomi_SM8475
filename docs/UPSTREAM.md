@@ -28,7 +28,9 @@ Android 17 解密实现来自 TWRP-Test 上游，本项目提供 liuqin 的设�
 
 `integration/manifest.lock.xml` 按官方 `default.xml` → `twrp-default.xml` → `remove-minimal.xml` 展开；全部项目固定到提交 SHA。官方 minimal 的目录完整保留，另保留 `hardware/qcom-caf/bootctrl` 和 `frameworks/libs/native_bridge_support`。ERoFS 与 VNDK 31 仍在官方项目集中；VNDK 兼容库不使用 SDK stub。
 
-此次随分支更新的其他提交为 build/make `1ff6b0ae732a31412d94882aaa89d030f0a6be17`、system/vold `e7e26ed2ffd9ad0469a05515cfd91940a3366d19`、vendor/twrp `4c5070577457a8dbb87f71ed53925cb56b397234`。cgroup-runtime、crash-dump、native-accessor、platform-release 四个补丁的锁定项目基线未变，已对精确上游文件执行应用检查；保留真实 recovery 运行库。
+此次随分支更新的其他提交为 build/make `1ff6b0ae732a31412d94882aaa89d030f0a6be17`、system/vold `e7e26ed2ffd9ad0469a05515cfd91940a3366d19`、vendor/twrp `4c5070577457a8dbb87f71ed53925cb56b397234`。cgroup-runtime、crash-dump、native-accessor 三个补丁为真实 recovery 运行库和 crash_dump 依赖开放 recovery 变体，锁定上游尚未吸收，已有构建和崩溃排查依据；保留精确基线应用检查。仅修改 CTS 版本列表的 platform-release 补丁随固定版本覆盖一并删除。
+
+`runtime-property-literal` 只修正 `twrp.cpp` 的一处属性名单消费：`twrp_flags.go` 已生成 C 字符串字面量，原 `EXPAND()` 再次字符串化会让首尾属性名带引号、无法精确匹配。补丁直接使用字符串宏，不改变上游属性读取、挂载或覆盖流程，并锁定上述 Recovery 基线；上游修复后应删除。镜像检查同时核对消费点和以 NUL 结尾的属性名单，避免只查二进制子串漏掉该缺陷。
 
 Recovery 的 `LoadVendorModules()` 已在发布 `twrp.modules.loaded` 前显式卸载本函数挂载的分区、禁用 scope guard 并恢复可选设备运行资源，因此删除旧 module-order 补丁。GUI2 的中文目录编译在 `libgui2.so` 中；`gui2/resources/Android.bp` 的 `gui2_fonts` 使用根目录 `prebuilt_res`，安装到 `/res/fonts/`。镜像验证改查 GUI2/LVGL/codec 运行库、中文目录和三个 TTF 字体，替代旧 `/twres/languages/zh_CN.xml` 断言；现有触控固件哈希、ELF、fstab、VINTF、init、AVB 与安全服务顺序检查继续保留。
 

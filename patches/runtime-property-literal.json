@@ -1,0 +1,6 @@
+{
+  "project": "bootable/recovery",
+  "base_commit": "a93a12ec107265ab9c3c7fe3e4f96c8740a01337",
+  "license": "GPL-3.0-or-later",
+  "patch": "runtime-property-literal.patch"
+}
