@@ -15,6 +15,85 @@ def duration(seconds):
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 
+def ninja_lines(stream):
+    """还原 Ninja 的 $ 换行，忽略续行缩进；转义的 $$ 不触发续行。"""
+    parts = []
+    for physical in stream:
+        text = physical.rstrip("\n")
+        if parts:
+            text = text.lstrip(" \t")
+        trailing_dollars = len(text) - len(text.rstrip("$"))
+        if trailing_dollars % 2:
+            parts.append(text[:-1])
+            continue
+        yield "".join(parts) + text
+        parts.clear()
+
+
+def rust_actions(source):
+    """按 Soong rustc 规则匹配 Ninja 已完成动作，不推测编译器内部命中率。"""
+    outputs = set()
+    for graph in sorted((source / "out/soong").glob("build*.ninja")):
+        with graph.open(encoding="utf-8", errors="replace") as stream:
+            for line in ninja_lines(stream):
+                if not line.startswith("build "):
+                    continue
+                paths, separator, rule = line[6:].partition(": ")
+                if separator and rule.split(maxsplit=1)[0].endswith("rustc"):
+                    outputs.update(paths.split())
+    actions = {}
+    for log in (source / "out/.ninja_log", source / "out/soong/.ninja_log"):
+        if not log.is_file():
+            continue
+        with log.open(encoding="utf-8", errors="replace") as stream:
+            for line in stream:
+                fields = line.rstrip("\n").split("\t")
+                if len(fields) != 5 or fields[3] not in outputs:
+                    continue
+                try:
+                    elapsed = int(fields[1]) - int(fields[0])
+                except ValueError:
+                    continue
+                if elapsed >= 0:
+                    # 一个输出在日志中可能出现多次，保留最后一次已完成动作。
+                    actions[fields[3]] = {"output": fields[3], "elapsed_ms": elapsed,
+                                          "command_hash": fields[4]}
+    return sorted(actions.values(), key=lambda item: item["output"])
+
+
+def summarize_rust(logs, source):
+    lines = ["", "### Rust 增量缓存", ""]
+    restore = logs / "cache-rust-restore.json"
+    if restore.is_file():
+        state = json.loads(restore.read_text(encoding="utf-8"))
+        lines.append(f"Actions 精确键命中：{state.get('exact_hit', 'unknown')}；"
+                     f"实际激活：{state.get('restored', False)}；"
+                     f"staging 检查尺寸：{state.get('size_kib', 0)} KiB。")
+    sizes = []
+    for phase in ("before", "after"):
+        path = source / f"logs/rust-cache-{phase}-kib.txt"
+        sizes.append(str(int(path.read_text().strip())) if path.is_file() else "未知")
+    lines.append(f"完整 out/rustc：构建前 {sizes[0]} KiB，构建后 {sizes[1]} KiB；保存上限 3 GiB。")
+    budget = logs / "rust-cache-save-budget.json"
+    if budget.is_file():
+        state = json.loads(budget.read_text(encoding="utf-8"))
+        lines.append(f"保存检查：{state['size_kib']} KiB；可用磁盘 {state['available_kib']} KiB。")
+    actions = rust_actions(source)
+    (logs / "rust-actions.json").write_text(
+        json.dumps(actions, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    lines.append(f"匹配 Soong rustc 规则的已完成动作 {len(actions)} 个；"
+                 f"动作耗时合计 {sum(item['elapsed_ms'] for item in actions) / 1000:.3f} 秒"
+                 "（并行动作相加，不是墙钟耗时）。逐输出耗时与 Ninja 命令 hash 见 rust-actions.json。")
+    lines += [
+        "Actions 命中和目录尺寸均不证明 rustc 内部复用；未启用不稳定的统计接口。"
+        "请比较同 commit、同参数的冷暖两轮动作耗时、命令 hash、构建资源和缓存传输耗时；"
+        "0 个动作表示未匹配到已完成记录，不能推断为全部复用。",
+        "固定 Soong 启用增量开关后不再强制 codegen-units=1，通常使用增量默认 256 CGU；"
+        "冷暖两轮均使用这一配置。相对旧基线的差异还包含 CGU 变化，应检查内存峰值和最终镜像验证。",
+    ]
+    return lines
+
+
 def summarize(logs, source):
     lines = [
         "## YARP CI 性能与进度",
@@ -94,6 +173,10 @@ def summarize(logs, source):
         lines += ["", "### 本次编译缓存统计", "", "```text"]
         lines.extend(stats.read_text(encoding="utf-8", errors="replace").splitlines())
         lines += ["```"]
+    try:
+        lines += summarize_rust(logs, source)
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
+        print(f"Cannot summarize Rust cache: {error}")
     lines += [
         "",
         "历史优化前基线：CI #2（run 42769591941）的命令阶段为同步 00:24:28、构建 01:18:42；"

@@ -16,17 +16,30 @@ if [[ "$USE_CCACHE" == true ]]; then
     export CC_WRAPPER=/usr/bin/ccache CXX_WRAPPER=/usr/bin/ccache
 fi
 export LC_ALL=C SOONG_GOMEMLIMIT="${SOONG_GOMEMLIMIT:-6GiB}"
+# The locked Soong switch also drops its codegen-units=1 default. Keep both
+# cold and warm CI runs on this same native incremental configuration.
+export SOONG_RUSTC_INCREMENTAL="${SOONG_RUSTC_INCREMENTAL:-true}"
+# CI cache keys require this relative OUT_DIR and a stable absolute source root.
+export OUT_DIR=out
+unset OUT_DIR_COMMON_BASE
 jobs="${JOBS:-4}"
 backend_jobs="${BACKEND_JOBS:-6}"
 mkdir -p logs artifacts
-if [[ "$USE_CCACHE" == true ]]; then
-    report_ccache_stats() {
-        local status=$?
-        trap - EXIT
+rust_size_kib() {
+    if [[ -d out/rustc ]]; then du -sk out/rustc | cut -f1; else printf '0\n'; fi
+}
+printf '%s\n' "$(rust_size_kib)" > logs/rust-cache-before-kib.txt
+report_cache_stats() {
+    local status=$?
+    trap - EXIT
+    printf '%s\n' "$(rust_size_kib)" > logs/rust-cache-after-kib.txt || true
+    if [[ "$USE_CCACHE" == true ]]; then
         ccache --show-stats | tee logs/ccache-after.txt || true
-        exit "$status"
-    }
-    trap report_ccache_stats EXIT
+    fi
+    exit "$status"
+}
+trap report_cache_stats EXIT
+if [[ "$USE_CCACHE" == true ]]; then
     ccache --max-size="${CCACHE_MAX_SIZE:-5Gi}"
     ccache --set-config=compression=true
     ccache --zero-stats

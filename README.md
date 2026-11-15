@@ -29,6 +29,9 @@ gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
 构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
 固定 repo v2.71，同步网络并发为 16、checkout 并发为 4，Soong 前端并发为 4、最终 Ninja 后端并发为 6；
 Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
+Rust 增量缓存实验使用上游 `SOONG_RUSTC_INCREMENTAL`，仅复用 `out/rustc`，独立限额 3 GiB；
+只接受精确缓存键和完整恢复，失败则正常冷编译，不缓存整个 `out/` 或跳过构建检查。
+该原生模式会取消固定的 `codegen-units=1`，因此须以相同配置的冷暖两轮比较，不能把与旧模式的差异全算作缓存收益。
 clang 与 Rust 先取浅层元数据、配置 sparse，再和其余项目共用一个 checkout 池；
 保留主 clang、bindgen clang 及当前 Rust，排除 Rust 的 Darwin、Windows 和旧 Linux 版本。
 通过 Actions cache 在同步前恢复最多 5 GiB 的 ccache；编译前仍要求至少 25 GiB 可用空间。

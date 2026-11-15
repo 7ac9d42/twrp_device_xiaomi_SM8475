@@ -20,6 +20,8 @@ jobs:
       SYNC_JOBS: '16'
       SYNC_CHECKOUT_JOBS: '4'
       SOONG_GOMEMLIMIT: 6GiB
+      SOONG_RUSTC_INCREMENTAL: 'true'
+      OUT_DIR: out
       USE_CCACHE: 'true'
       CCACHE_MAX_SIZE: 5Gi
       DEBIAN_FRONTEND: noninteractive
@@ -59,9 +61,12 @@ jobs:
             rsync unzip xsltproc zip zlib1g-dev
           sudo -n apt-get clean
 
-      - name: Test GPT metadata and I/O handling
+      - name: Test GPT metadata and cache handling
         shell: bash
-        run: timeout --kill-after=5s 2m python3 -I tools/validation/test_gpt_utils.py
+        run: |
+          set -euo pipefail
+          timeout --kill-after=5s 2m python3 -I tools/validation/test_gpt_utils.py
+          timeout --kill-after=5s 1m python3 -I tools/ci/test-rust-cache.py
 
       - name: Verify and extract fixed vendor payloads
         shell: bash
@@ -199,6 +204,74 @@ jobs:
             .repo/project-objects/platform/prebuilts/clang/host/linux-x86.git \
             prebuilts/clang/host/linux-x86 prebuilts/rust > "$CI_LOG_DIR/source-sizes.log"
 
+      - name: Prepare exact Rust incremental cache
+        id: rust-cache-config
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          # No prefix fallback: version, build graph and absolute paths must agree.
+          [[ "$SOONG_RUSTC_INCREMENTAL" == true && "$OUT_DIR" == out && -z "${OUT_DIR_COMMON_BASE:-}" ]]
+          [[ "$(realpath "$SOURCE_ROOT")" == "$SOURCE_ROOT" ]]
+          revision=$(python3 -I -c 'import xml.etree.ElementTree as E; print(E.parse("integration/manifest.lock.xml").find("./project[@path=\"prebuilts/rust\"]").attrib["revision"])')
+          config_hash=$({
+            git ls-files -z -- '*.mk' '*.bp' '*.prop' '*.fstab' \
+              'bootctrl/**' 'gpt-utils/**' 'recovery/**' 'prebuilt/**' 'kernel/**' \
+              'patches/**' 'integration/**' 'proprietary-files.json' 'tools/**' \
+              '.github/workflows/build.yml' | sort -z | xargs -0 sha256sum || exit 1
+            printf 'ROOT=%s\nOUT_DIR=out\nSOONG_RUSTC_INCREMENTAL=true\n' "$SOURCE_ROOT"
+          } | sha256sum | cut -d ' ' -f1)
+          printf 'key=%s\n' "yarp-rust-v1-$RUNNER_OS-$RUNNER_ARCH-$revision-$config_hash" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/yarp-rust-cache"
+          available=$(df -Pk "$SOURCE_ROOT" | awk 'NR==2 {print $4}')
+          # 3 GiB cache + 3 GiB transfer space + the build's 25 GiB reserve.
+          if (( available >= 31 * 1024 * 1024 )); then
+            printf 'restore=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'Skip Rust restore: less than 31 GiB free.\n'
+          fi
+          printf 'RUST_CACHE_RESTORE_START=%s\n' "$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Restore exact Rust incremental cache to staging
+        id: rust-cache-restore
+        if: steps.rust-cache-config.outputs.restore == 'true'
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/yarp-rust-cache/rustc
+          key: ${{ steps.rust-cache-config.outputs.key }}
+
+      - name: Activate complete Rust incremental cache
+        if: always() && steps.sync.outcome == 'success'
+        shell: bash
+        env:
+          RUST_CACHE_OUTCOME: ${{ steps.rust-cache-restore.outcome }}
+          RUST_CACHE_HIT: ${{ steps.rust-cache-restore.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          store="$RUNNER_TEMP/yarp-rust-cache/rustc"
+          size=0 available=0 restored=false
+          # A failed/partial extraction never reaches rustc. A successful cache
+          # action and exact hit are the same completeness gate as clang's cache.
+          if [[ "$RUST_CACHE_OUTCOME" == success && "$RUST_CACHE_HIT" == true && -d "$store" && ! -L "$store" ]] \
+            && size=$(du -sk "$store" | cut -f1) \
+            && available=$(df -Pk "$SOURCE_ROOT" | awk 'NR==2 {print $4}') \
+            && (( size > 0 && size <= 3 * 1024 * 1024 && available >= 25 * 1024 * 1024 )); then
+            mkdir -p "$SOURCE_ROOT/out"
+            [[ ! -e "$SOURCE_ROOT/out/rustc" && ! -L "$SOURCE_ROOT/out/rustc" ]]
+            mv -- "$store" "$SOURCE_ROOT/out/rustc"
+            restored=true
+          elif [[ -e "$store" || -L "$store" ]]; then
+            incomplete=$(mktemp -d "$RUNNER_TEMP/yarp-rust-cache-incomplete.XXXXXX")
+            mv -- "$store" "$incomplete/"
+            printf 'Isolated unusable Rust cache in %s; compile cold.\n' "$incomplete"
+          fi
+          now=$(date +%s)
+          printf '{"stage":"rust-cache-restore","start_epoch":%s,"end_epoch":%s,"status":"%s","exact_hit":"%s","restored":%s,"size_kib":%s,"available_kib":%s}\n' \
+            "${RUST_CACHE_RESTORE_START:-$now}" "$now" "${RUST_CACHE_OUTCOME:-skipped}" "${RUST_CACHE_HIT:-false}" "$restored" "${size:-0}" "${available:-0}" > "$CI_LOG_DIR/cache-rust-restore.json"
+          printf 'Rust cache: exact-hit=%s activated=%s size=%s KiB free=%s KiB.\n' "${RUST_CACHE_HIT:-false}" "$restored" "${size:-0}" "${available:-0}"
+
       - name: Build recovery and validation tools
         id: build
         shell: bash
@@ -216,6 +289,61 @@ jobs:
           cd "$RUNNER_TEMP/yarp-output"
           sha256sum recovery.img > SHA256SUMS
           printf 'device_tree=%s\nrepository=%s\n' "$GITHUB_SHA" "$GITHUB_REPOSITORY" > source.txt
+
+      - name: Prepare verified Rust incremental cache save
+        id: rust-cache-save-config
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          RUST_CACHE_HIT: ${{ steps.rust-cache-restore.outputs.cache-hit }}
+          RUST_CACHE_KEY: ${{ steps.rust-cache-config.outputs.key }}
+        run: |
+          set -euo pipefail
+          now=$(date +%s)
+          printf 'RUST_CACHE_SAVE_START=%s\n' "$now" >> "$GITHUB_ENV"
+          if [[ "$BUILD_OUTCOME" != success || "$VERIFY_OUTCOME" != success || "$RUST_CACHE_HIT" == true || -z "$RUST_CACHE_KEY" || "$SOONG_RUSTC_INCREMENTAL" != true ]]; then
+            printf 'Skip Rust save: requires a successful verified build and a new exact key.\n'
+            exit 0
+          fi
+          store="$SOURCE_ROOT/out/rustc"
+          [[ -d "$store" && ! -L "$store" ]] || exit 0
+          size=$(du -sk "$store" | cut -f1)
+          available=$(df -Pk "$store" | awk 'NR==2 {print $4}')
+          printf '{"size_kib":%s,"available_kib":%s,"limit_kib":3145728}\n' "$size" "$available" > "$CI_LOG_DIR/rust-cache-save-budget.json"
+          printf 'Rust cache: %s KiB total; limit 3 GiB; free %s KiB.\n' "$size" "$available"
+          if (( size > 0 && size <= 3 * 1024 * 1024 && available >= size + 3 * 1024 * 1024 )); then
+            # Match the restore path exactly: actions/cache includes it in its version.
+            mkdir -p "$RUNNER_TEMP/yarp-rust-cache"
+            [[ ! -e "$RUNNER_TEMP/yarp-rust-cache/rustc" && ! -L "$RUNNER_TEMP/yarp-rust-cache/rustc" ]]
+            mv -- "$store" "$RUNNER_TEMP/yarp-rust-cache/rustc"
+            printf 'save=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'Skip Rust save: exceeds 3 GiB or lacks archive space plus 3 GiB reserve.\n'
+          fi
+
+      - name: Save verified Rust incremental cache
+        id: rust-cache-save
+        if: always() && steps.rust-cache-save-config.outputs.save == 'true'
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/yarp-rust-cache/rustc
+          key: ${{ steps.rust-cache-config.outputs.key }}
+
+      - name: Record Rust incremental cache save
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          RUST_CACHE_OUTCOME: ${{ steps.rust-cache-save.outcome }}
+        run: |
+          now=$(date +%s)
+          printf '{"stage":"rust-cache-save","start_epoch":%s,"end_epoch":%s,"status":"%s"}\n' \
+            "${RUST_CACHE_SAVE_START:-$now}" "$now" "${RUST_CACHE_OUTCOME:-skipped}" > "$CI_LOG_DIR/cache-rust-save.json"
 
       - name: Prepare compiler cache save
         id: cache-save-config
