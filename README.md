@@ -1,6 +1,6 @@
 # YARP device tree — Xiaomi Pad 6 Pro / liuqin
 
-**仅面向小米平板 6 Pro（liuqin）。旧版 TWRP 已通过下文所列真机测试，本次 YARP 构建已通过 CI，尚未经真机验证。仓库名称包含 SM8475，不代表其他同 SoC 设备受支持。**
+**仅面向小米平板 6 Pro（liuqin）。旧版 TWRP 已通过下文所列真机测试；YARP 已通过 CI，并在 OS4.0.6.0.XMYCNXM 实测启动、metadata 解密及 data 挂载，用户锁屏密码解密仍待验证。仓库名称包含 SM8475，不代表其他同 SoC 设备受支持。**
 没有测试其他手机或下文未列出的固件；不建议将 liuqin 镜像用于其他设备。
 
 面向 HyperOS 4 / Android 17 的 YARP 设备适配，基于
@@ -34,7 +34,7 @@ runner 会按白名单释放无关 SDK 空间，分配 swap 后为首次同步�
 
 成功后下载 `yarp-liuqin-<run_number>` artifact，包含 `recovery.img`、`SHA256SUMS`、
 完整源码 manifest 和设备树提交。检查与构建日志存放在独立 diagnostics artifact，保留 14 天。
-CI 不创建 Release。CI 通过代表构建与静态检查通过，新版触控、密码解密和重启仍需真机验证。
+CI 不创建 Release。CI 通过仅代表构建与静态检查通过，不能替代真机验证；已验证范围见下文。
 
 优化前的基线是 2026-11-10 的[成功构建 #2](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/42769591941)
 使用设备树提交 `29d8ba4b359f9cbc3b4fe4343aec9da43304126d`，artifact 为 `yarp-liuqin-2`。
@@ -77,6 +77,20 @@ swap 使用峰值约 176 / 121 MiB，磁盘最低余量约 26 GiB。
 ```text
 1a46c96b5e8e769e83d05fcba50a3bf528fead0ff95341854f75ed969a1e5b63
 ```
+
+## YARP 已验证范围
+
+2026-11-15，在 OS4.0.6.0.XMYCNXM 上验证了修复镜像
+[`yarp-liuqin-6`](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/43679041315)，
+设备树提交 `44d62ce4aa2dd506597debcd68b810d54ea5e1a7`，大小 104857600 字节，SHA-256：
+
+```text
+12124aa1edeec6dfd1b8ddd81a99aaf6a5444635e1e34662b475216b6266e06b
+```
+
+系统补丁日期对齐 2026-10-01 后，A 槽刷入及重启 Recovery 成功，分区哈希与产物一致；
+metadata 解密成功，data 通过解密映射设备以 F2FS 挂载。B 槽保持不变。
+未输入锁屏密码，用户 0 的凭据加密数据、内部存储访问、MTP 和重启系统仍未经本轮验证。
 
 ## 旧版 TWRP 已验证范围
 
