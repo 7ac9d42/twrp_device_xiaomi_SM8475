@@ -26,7 +26,7 @@ gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
 ```
 
 构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
-固定 repo v2.71，同步网络并发为 16、checkout 并发为 4，编译并发为 4；
+固定 repo v2.71，同步网络并发为 16、checkout 并发为 4，Soong 前端并发为 4、最终 Ninja 后端并发为 6；
 Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
 clang 与 Rust 先取浅层元数据、配置 sparse，再和其余项目共用一个 checkout 池；
 保留主 clang、bindgen clang 及当前 Rust，排除 Rust 的 Darwin、Windows 和旧 Linux 版本。
@@ -107,9 +107,11 @@ e48be16c07a38b6f653bebb5d10647d5020c1171ade87dbd66afb441595c49e1
 约 2272 MiB，并使用了 swap。增加外层 jobs 不能直接拆分这条生成图命令。
 
 按 Ninja 日志去重多输出后，后端约 95.6% 的时间同时运行 4 条命令，CPU 采样均值约 94.7%；
-Rust、链接和生成步骤也不受 C/C++ ccache 全命中覆盖。因此当前仍保持网络 16、checkout 4、构建 4，
-不直接改为全程 `-j8`。若开展对照实验，优先只调整最终后端为 `-j6`，保持前端为 4；
-当前 `JOBS` 同时影响前后端，须先核对锁定 Soong 的独立覆盖接口，不能仅修改该变量。
+Rust、链接和生成步骤也不受 C/C++ ccache 全命中覆盖。因此不直接改为全程 `-j8`，
+而是保持网络 16、checkout 4、Soong 前端 4，仅将最终后端设为 6。
+`JOBS` 仍控制前端，新增 `BACKEND_JOBS` 控制后端；锁定 Soong 的 `NINJA_EXTRA_ARGS`
+只追加到最终 Ninja 命令，末尾的 `-j6` 覆盖默认值，不改变 bootstrap 并发。
+新参数已通过本地 fixture，实际性能和镜像结果需由 main CI 验证。
 同步 checkout 4→6 可作为独立的第二项实验，但 #8 同步阶段 I/O full stall 累计约 158 秒，
 更高并发也可能增加磁盘竞争，不能仅凭低 CPU 判断网络池不足。
 

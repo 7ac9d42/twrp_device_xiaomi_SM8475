@@ -17,6 +17,7 @@ if [[ "$USE_CCACHE" == true ]]; then
 fi
 export LC_ALL=C SOONG_GOMEMLIMIT="${SOONG_GOMEMLIMIT:-6GiB}"
 jobs="${JOBS:-4}"
+backend_jobs="${BACKEND_JOBS:-6}"
 mkdir -p logs artifacts
 if [[ "$USE_CCACHE" == true ]]; then
     report_ccache_stats() {
@@ -46,4 +47,7 @@ for obsolete in libvndksupport.so libcgrouprc.so; do
 done
 source build/envsetup.sh
 lunch twrp_liuqin bp2a eng
+# Locked Soong ui/build/ninja.go appends NINJA_EXTRA_ARGS only to the final
+# Ninja command; bootstrap keeps m's -j value. The last -j takes precedence.
+export NINJA_EXTRA_ARGS="${NINJA_EXTRA_ARGS:+$NINJA_EXTRA_ARGS }-j$backend_jobs"
 m -j"$jobs" recoveryimage host_init_verifier assemble_vintf avbtool 2>&1 | tee "logs/build-$(date +%Y%m%d-%H%M%S).log"

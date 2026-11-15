@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 360
     env:
       JOBS: '4'
+      BACKEND_JOBS: '6'
       SYNC_JOBS: '16'
       SYNC_CHECKOUT_JOBS: '4'
       SOONG_GOMEMLIMIT: 6GiB

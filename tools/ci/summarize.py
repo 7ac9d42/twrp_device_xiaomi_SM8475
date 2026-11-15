@@ -19,7 +19,8 @@ def summarize(logs, source):
     lines = [
         "## YARP CI 性能与进度",
         "",
-        f"编译并发 {os.environ.get('JOBS', '?')}；"
+        f"Soong 前端并发 {os.environ.get('JOBS', '?')}、"
+        f"Ninja 后端并发 {os.environ.get('BACKEND_JOBS', '?')}；"
         f"同步网络并发 {os.environ.get('SYNC_JOBS', '?')}、"
         f"checkout 并发 {os.environ.get('SYNC_CHECKOUT_JOBS', '?')}；"
         f"Soong Go 内存目标 {os.environ.get('SOONG_GOMEMLIMIT', '?')}；"
