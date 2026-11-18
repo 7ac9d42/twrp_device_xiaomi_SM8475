@@ -2,6 +2,11 @@ name: Build YARP for liuqin
 
 on:
   workflow_dispatch:
+    inputs:
+      cache_rust_toolchain:
+        description: Reuse the pinned Rust toolchain Git objects
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -173,31 +178,56 @@ jobs:
           path: ${{ runner.temp }}/yarp-source/.repo/project-objects/platform/prebuilts/clang/host/linux-x86.git
           key: ${{ steps.clang-cache-config.outputs.key }}
 
+      - name: Record clang object cache restore
+        shell: bash
+        env:
+          CACHE_OUTCOME: ${{ steps.clang-cache-restore.outcome }}
+          CACHE_HIT: ${{ steps.clang-cache-restore.outputs.cache-hit }}
+        run: bash tools/ci/toolchain-cache.sh finish-restore clang "$CACHE_OUTCOME" "$CACHE_HIT" "${CLANG_CACHE_RESTORE_START:-}"
+
+      - name: Prepare exact Rust toolchain object cache
+        id: rust-cache-config
+        if: inputs.cache_rust_toolchain
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          revision=$(python3 -I -c 'import xml.etree.ElementTree as E; print(E.parse("integration/manifest.lock.xml").find("./project[@path=\"prebuilts/rust\"]").attrib["revision"])')
+          selection=$(sha256sum integration/rust-sparse-checkout.txt | cut -d ' ' -f1)
+          printf 'key=yarp-rust-objects-v1-%s-%s-%s-%s\n' "$RUNNER_OS" "$RUNNER_ARCH" "$revision" "$selection" >> "$GITHUB_OUTPUT"
+          printf 'RUST_CACHE_RESTORE_START=%s\n' "$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Restore exact Rust toolchain object cache
+        id: rust-cache-restore
+        if: steps.rust-cache-config.outputs.key != ''
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/yarp-source/.repo/project-objects/platform/prebuilts/rust.git
+          key: ${{ steps.rust-cache-config.outputs.key }}
+
+      - name: Record Rust toolchain object cache restore
+        shell: bash
+        env:
+          CACHE_OUTCOME: ${{ steps.rust-cache-restore.outcome }}
+          CACHE_HIT: ${{ steps.rust-cache-restore.outputs.cache-hit }}
+        run: bash tools/ci/toolchain-cache.sh finish-restore rust "$CACHE_OUTCOME" "$CACHE_HIT" "${RUST_CACHE_RESTORE_START:-}"
+
       - name: Synchronize minimal sources
         id: sync
         shell: bash
-        env:
-          CLANG_CACHE_OUTCOME: ${{ steps.clang-cache-restore.outcome }}
-          CLANG_CACHE_HIT: ${{ steps.clang-cache-restore.outputs.cache-hit }}
         run: |
           set -euo pipefail
-          store="$SOURCE_ROOT/.repo/project-objects/platform/prebuilts/clang/host/linux-x86.git"
-          if [[ -e "$store" && ( "$CLANG_CACHE_OUTCOME" != success || "$CLANG_CACHE_HIT" != true ) ]]; then
-            incomplete=$(mktemp -d "$RUNNER_TEMP/yarp-clang-cache-incomplete.XXXXXX")
-            mv -- "$store" "$incomplete/"
-            printf 'Isolated incomplete clang cache in %s; use a cold sync.\n' "$incomplete"
-          fi
-          now=$(date +%s)
-          printf '{"stage":"clang-cache-restore","start_epoch":%s,"end_epoch":%s,"status":"%s","exact_hit":"%s"}\n' \
-            "${CLANG_CACHE_RESTORE_START:-$now}" "$now" "${CLANG_CACHE_OUTCOME:-skipped}" "${CLANG_CACHE_HIT:-false}" > "$CI_LOG_DIR/cache-clang-restore.json"
           bash tools/ci/run-stage.sh sync bash "$SOURCE_ROOT/device/xiaomi/liuqin/tools/sync.sh"
           cd "$SOURCE_ROOT"
           repo manifest -r -o "$RUNNER_TEMP/yarp-output/manifest.lock.xml"
           df -h . | tee "$CI_LOG_DIR/disk-after-sync.log"
           free -h | tee "$CI_LOG_DIR/memory-after-sync.log"
-          du -sh .repo prebuilts external frameworks \
-            .repo/project-objects/platform/prebuilts/clang/host/linux-x86.git \
-            prebuilts/clang/host/linux-x86 prebuilts/rust > "$CI_LOG_DIR/source-sizes.log"
+          du -sh .repo prebuilts external frameworks > "$CI_LOG_DIR/source-sizes.log"
+          du -sh .repo/project-objects/platform/prebuilts/clang/host/linux-x86.git \
+            .repo/project-objects/platform/prebuilts/rust.git \
+            prebuilts/clang/host/linux-x86 prebuilts/rust >> "$CI_LOG_DIR/source-sizes.log"
 
       - name: Build recovery and validation tools
         id: build
@@ -269,26 +299,10 @@ jobs:
 
       - name: Check clang object cache budget
         id: clang-cache-save-config
-        if: always() && steps.verify.outcome == 'success' && steps.clang-cache-restore.outputs.cache-hit != 'true' && steps.clang-cache-config.outputs.key != ''
+        if: steps.verify.outcome == 'success' && steps.clang-cache-restore.outputs.cache-hit != 'true' && steps.clang-cache-config.outputs.key != ''
         continue-on-error: true
         shell: bash
-        run: |
-          set -euo pipefail
-          printf 'CLANG_CACHE_SAVE_START=%s\n' "$(date +%s)" >> "$GITHUB_ENV"
-          store="$SOURCE_ROOT/.repo/project-objects/platform/prebuilts/clang/host/linux-x86.git"
-          project="$SOURCE_ROOT/.repo/projects/prebuilts/clang/host/linux-x86.git"
-          if [[ $(realpath "$project/objects") != "$(realpath "$store/objects")" ]]; then
-            printf 'Skip clang cache save: project uses a different object store.\n'
-            exit 0
-          fi
-          size=$(du -sk "$store" | cut -f1)
-          available=$(df -Pk "$store" | awk 'NR==2 {print $4}')
-          printf 'Clang object cache: %s KiB; limit 3 GiB; free %s KiB.\n' "$size" "$available"
-          if (( size <= 3 * 1024 * 1024 && available >= size + 3 * 1024 * 1024 )); then
-            printf 'save=true\n' >> "$GITHUB_OUTPUT"
-          else
-            printf 'Skip clang cache save: exceeds 3 GiB cache budget or archive space reserve.\n'
-          fi
+        run: bash tools/ci/toolchain-cache.sh check-save clang
 
       - name: Save exact clang object cache
         id: clang-cache-save
@@ -300,17 +314,46 @@ jobs:
           path: ${{ runner.temp }}/yarp-source/.repo/project-objects/platform/prebuilts/clang/host/linux-x86.git
           key: ${{ steps.clang-cache-config.outputs.key }}
 
+      - name: Record clang object cache save
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          CACHE_OUTCOME: ${{ steps.clang-cache-save.outcome }}
+        run: bash tools/ci/toolchain-cache.sh finish-save clang "$CACHE_OUTCOME" "${CLANG_CACHE_SAVE_START:-}"
+
+      - name: Check Rust toolchain object cache budget
+        id: rust-cache-save-config
+        if: steps.verify.outcome == 'success' && steps.rust-cache-restore.outputs.cache-hit != 'true' && steps.rust-cache-config.outputs.key != ''
+        continue-on-error: true
+        shell: bash
+        run: bash tools/ci/toolchain-cache.sh check-save rust
+
+      - name: Save exact Rust toolchain object cache
+        id: rust-cache-save
+        if: steps.rust-cache-save-config.outputs.save == 'true'
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/yarp-source/.repo/project-objects/platform/prebuilts/rust.git
+          key: ${{ steps.rust-cache-config.outputs.key }}
+
+      - name: Record Rust toolchain object cache save
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          CACHE_OUTCOME: ${{ steps.rust-cache-save.outcome }}
+        run: bash tools/ci/toolchain-cache.sh finish-save rust "$CACHE_OUTCOME" "${RUST_CACHE_SAVE_START:-}"
+
       - name: Collect diagnostics
         if: always()
         shell: bash
         env:
           SYNC_OUTCOME: ${{ steps.sync.outcome }}
-          CLANG_CACHE_SAVE_OUTCOME: ${{ steps.clang-cache-save.outcome }}
         run: |
           mkdir -p "$RUNNER_TEMP/yarp-logs"
-          now=$(date +%s)
-          printf '{"stage":"clang-cache-save","start_epoch":%s,"end_epoch":%s,"status":"%s"}\n' \
-            "${CLANG_CACHE_SAVE_START:-$now}" "$now" "${CLANG_CACHE_SAVE_OUTCOME:-skipped}" > "$CI_LOG_DIR/cache-clang-save.json"
           df -h > "$RUNNER_TEMP/yarp-logs/disk-final.log"
           free -h > "$RUNNER_TEMP/yarp-logs/memory-final.log"
           if [[ "$SYNC_OUTCOME" == success && -d "$SOURCE_ROOT/.repo" ]]; then

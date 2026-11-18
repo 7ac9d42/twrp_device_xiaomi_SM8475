@@ -39,6 +39,8 @@ def summarize(logs, source):
             status = data.get("status")
             if status is None:
                 status = "success" if data["exit_status"] == 0 else f"exit {data['exit_status']}"
+            if "exact_hit" in data:
+                status = f"{status}（精确命中：{data['exact_hit']}）"
             timings.append((int(data["start_epoch"]), data["stage"], elapsed, status))
         except (OSError, ValueError, KeyError, TypeError) as error:
             print(f"Cannot summarize {path.name}: {error}")

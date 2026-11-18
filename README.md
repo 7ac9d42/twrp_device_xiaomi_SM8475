@@ -32,8 +32,10 @@ Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
 clang 与 Rust 先取浅层元数据、配置 sparse，再和其余项目共用一个 checkout 池；
 保留主 clang、bindgen clang 及当前 Rust，排除 Rust 的 Darwin、Windows 和旧 Linux 版本。
 通过 Actions cache 在同步前恢复最多 5 GiB 的 ccache；编译前仍要求至少 25 GiB 可用空间。
-clang 单项目 Git 对象库另按精确提交和 sparse 清单缓存，最多 3 GiB，超出则跳过保存；
-其余源码、完整 `.repo` 和 `out/` 不做整体缓存。
+Clang 和 Rust 工具链的 Git 对象库独立按 runner 平台、锁定提交和各自的 sparse 清单精确缓存，
+预算分别为 3 GiB 和 2 GiB；仅在镜像验证通过、未精确命中且磁盘余量充足时保存。
+恢复失败或未命中会隔离残留对象库并正常同步；仍按锁定提交完成 checkout 和镜像验证。
+其余源码、完整 `.repo` 和 `out/` 不做整体缓存；Rust 工具链缓存不包含编译增量产物。
 ccache 优先恢复同工具链缓存，再回退到同平台缓存，由编译器内容校验保证正确性。
 缓存受 GitHub 分支作用域限制；迁移到尚无兼容缓存的分支（包括首次合入 main）时，
 首轮仍需填充缓存，后续运行才能获得暖缓存收益。
@@ -41,7 +43,10 @@ runner 会按白名单释放无关 SDK 空间，分配 swap 后为首次同步�
 并在编译前检查至少 25 GiB 剩余空间；
 阶段超时或磁盘余量不足会终止任务并上传诊断。
 同步与编译输出会实时显示在 Actions 日志中，每 30 秒输出阶段耗时和资源摘要；
-运行汇总页同时列出阶段耗时、缓存传输耗时、资源采样和 ccache 命中率。
+运行汇总页同时列出阶段耗时、缓存传输耗时与精确命中、资源采样和 ccache 命中率。
+Rust 工具链缓存默认开启，可通过 `cache_rust_toolchain=false` 关闭作对照。用同一提交、同样的
+ccache/Clang 命中状态，比较“Rust 恢复 + 同步”和 job 总耗时；首轮另计保存开销。
+当前尚无 Rust 工具链缓存的远端净收益数据。
 
 厂商载荷从本仓库现有 `v1.0.0/recovery.img` 恢复，验证整镜像及清单内每个文件的 SHA-256；
 新版 Recovery 和系统运行库从锁定的上游源码编译。无需下载整套固件。
