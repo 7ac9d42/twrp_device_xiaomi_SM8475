@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 set -eo pipefail
+frontend_only=false
+case "$#:${1:-}" in
+    0:) ;;
+    1:--frontend-only) frontend_only=true ;;
+    *) printf 'Usage: bash tools/build.sh [--frontend-only]\n' >&2; exit 2 ;;
+esac
 tree=$(cd "$(dirname "$0")/.." && pwd)
 root=$(realpath "$tree/../../..")
 test -f "$root/build/envsetup.sh" || { echo "Place the tree at device/xiaomi/liuqin" >&2; exit 1; }
@@ -19,7 +25,7 @@ export LC_ALL=C SOONG_GOMEMLIMIT="${SOONG_GOMEMLIMIT:-6GiB}"
 jobs="${JOBS:-4}"
 backend_jobs="${BACKEND_JOBS:-6}"
 mkdir -p logs artifacts
-if [[ "$USE_CCACHE" == true ]]; then
+if [[ "$USE_CCACHE" == true && "$frontend_only" == false ]]; then
     report_ccache_stats() {
         local status=$?
         trap - EXIT
@@ -38,16 +44,22 @@ python3 -I "$tree/tools/extract-files.py" --root "$root" --check
 python3 -I "$tree/tools/apply-patches.py" --root "$root" --check
 # --check alone reports unapplied patches, so require all recorded diffs already present.
 python3 -I "$tree/tools/apply-patches.py" --root "$root"
-for obsolete in libvndksupport.so libcgrouprc.so; do
-    stale="out/target/product/liuqin/recovery/root/vendor/lib64/$obsolete"
-    if [[ -f "$stale" ]]; then
-        rm -- "$stale"
-        rm -f -- out/target/product/liuqin/obj/PACKAGING/recovery_intermediates/ramdisk_files-timestamp
-    fi
-done
+if [[ "$frontend_only" == false ]]; then
+    for obsolete in libvndksupport.so libcgrouprc.so; do
+        stale="out/target/product/liuqin/recovery/root/vendor/lib64/$obsolete"
+        if [[ -f "$stale" ]]; then
+            rm -- "$stale"
+            rm -f -- out/target/product/liuqin/obj/PACKAGING/recovery_intermediates/ramdisk_files-timestamp
+        fi
+    done
+fi
 source build/envsetup.sh
 lunch twrp_liuqin bp2a eng
 # Locked Soong ui/build/ninja.go appends NINJA_EXTRA_ARGS only to the final
 # Ninja command; bootstrap keeps m's -j value. The last -j takes precedence.
 export NINJA_EXTRA_ARGS="${NINJA_EXTRA_ARGS:+$NINJA_EXTRA_ARGS }-j$backend_jobs"
-m -j"$jobs" recoveryimage host_init_verifier assemble_vintf avbtool 2>&1 | tee "logs/build-$(date +%Y%m%d-%H%M%S).log"
+args=(-j"$jobs")
+if [[ "$frontend_only" == true ]]; then
+    args+=(--skip-ninja)
+fi
+m "${args[@]}" recoveryimage host_init_verifier assemble_vintf avbtool 2>&1 | tee "logs/build-$(date +%Y%m%d-%H%M%S).log"

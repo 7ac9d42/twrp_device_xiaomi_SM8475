@@ -23,12 +23,17 @@ def summarize(logs, source):
         f"Ninja 后端并发 {os.environ.get('BACKEND_JOBS', '?')}；"
         f"同步网络并发 {os.environ.get('SYNC_JOBS', '?')}、"
         f"checkout 并发 {os.environ.get('SYNC_CHECKOUT_JOBS', '?')}；"
-        f"Soong Go 内存目标 {os.environ.get('SOONG_GOMEMLIMIT', '?')}；"
+        f"Soong Go 默认内存目标 {os.environ.get('SOONG_GOMEMLIMIT', '?')}；"
         f"ccache 上限 {os.environ.get('CCACHE_MAX_SIZE', '?')}。",
         "",
-        "| 阶段 | 耗时 | 结果 |",
-        "| --- | --- | --- |",
     ]
+    if os.environ.get("COMPARE_SOONG_MEMORY") == "true":
+        lines += [
+            "Soong 内存对照：6 GiB 仅生成构建图，8 GiB 完成编译和镜像验证。"
+            "请比较两组 Soong 图生成指标和 CPU profile，不直接比较两个阶段总耗时。",
+            "",
+        ]
+    lines += ["| 阶段 | 耗时 | 结果 |", "| --- | --- | --- |"]
     timings = []
     for path in sorted(logs.glob("*/timing.json")) + sorted(logs.glob("cache-*.json")):
         try:
