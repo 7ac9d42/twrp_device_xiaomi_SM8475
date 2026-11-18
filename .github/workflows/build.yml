@@ -7,6 +7,10 @@ on:
         description: Reuse the pinned Rust toolchain Git objects
         type: boolean
         default: true
+      fast_host_rust:
+        description: Experiment with Rust opt-level=1 for Linux host modules
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -232,8 +236,11 @@ jobs:
       - name: Build recovery and validation tools
         id: build
         shell: bash
+        env:
+          LIUQIN_FAST_HOST_RUST: ${{ inputs.fast_host_rust && 'true' || 'false' }}
         run: |
           set -euo pipefail
+          printf 'Linux host Rust opt-level=1 requested: %s\n' "$LIUQIN_FAST_HOST_RUST"
           bash tools/ci/run-stage.sh build bash "$SOURCE_ROOT/device/xiaomi/liuqin/tools/build.sh"
 
       - name: Verify the final image

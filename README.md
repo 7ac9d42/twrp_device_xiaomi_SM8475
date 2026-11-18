@@ -157,6 +157,18 @@ Rust、链接和生成步骤也不受 C/C++ ccache 全命中覆盖。因此不�
 `codegen-units=1`，冷构建耗时不能隔离缓存收益。由于未取得预算内的暖缓存净收益证据，
 已撤回该开关、缓存步骤、专项统计与测试，维持前述已验证流程。#10/#11 未进行设备刷写或真机验收。
 
+### 宿主 Rust 编译实验（默认关闭）
+
+同提交的 [#13](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/44311896940)
+和 [#14](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/44318083368) 中，
+`bindgen` 单个构建动作耗时 119/178 秒、`cxxbridge` 112/146 秒，且 C/C++ 可缓存调用全部命中。
+`fast_host_rust=true` 只将锁定 Soong 中 Linux glibc 宿主 Rust 模块的默认优化级别改为 `-C opt-level=1`；
+模块显式 flags 仍可覆盖，Android 目标参数、Rust 工具链、构建目标和镜像检查保持不变。
+关闭时沿用 `-C opt-level=3`。本地核对补丁与参数边界，不代表 CI 已提速。
+
+验收用同一提交、相同缓存命中状态交替运行两种模式，核对代表性宿主与 Android Rust 命令的最终参数，
+比较宿主生成工具及其下游动作、完整编译和 job 总耗时，同时要求镜像检查通过。
+
 ## YARP 已验证范围
 
 2026-11-15，在 liuqin 上实测了上述

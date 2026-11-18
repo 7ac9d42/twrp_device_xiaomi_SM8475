@@ -1,0 +1,12 @@
+diff --git a/rust/compiler.go b/rust/compiler.go
+--- a/rust/compiler.go
++++ b/rust/compiler.go
+@@ -425,5 +425,8 @@
+ func CommonDefaultFlags(ctx android.ModuleContext, toolchain config.Toolchain, flags Flags) Flags {
+ 	flags.GlobalRustFlags = append(flags.GlobalRustFlags, config.GlobalRustFlags...)
+ 	flags.GlobalRustFlags = append(flags.GlobalRustFlags, toolchain.ToolchainRustFlags())
++	if ctx.Os() == android.Linux && ctx.Config().IsEnvTrue("LIUQIN_FAST_HOST_RUST") {
++		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C opt-level=1")
++	}
+ 	flags.GlobalLinkFlags = append(flags.GlobalLinkFlags, toolchain.ToolchainLinkFlags())
+ 	flags.EmitXrefs = ctx.Config().EmitXrefRules()

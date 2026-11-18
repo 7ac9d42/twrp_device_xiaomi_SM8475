@@ -1,0 +1,6 @@
+{
+  "project": "build/soong",
+  "base_commit": "95e4cb167d65d5f2a034f1eeac73a920adebc09d",
+  "license": "Apache-2.0",
+  "patch": "host-rust-opt-level.patch"
+}
