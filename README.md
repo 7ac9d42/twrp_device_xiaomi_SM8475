@@ -171,10 +171,11 @@ Rust、链接和生成步骤也不受 C/C++ ccache 全命中覆盖。因此不�
 
 ### Soong 前端内存对照（默认关闭）
 
-`compare_soong_memory=true` 在同一 runner 和同一份源码上，先用独立输出目录以 6 GiB 生成构建图，
-再以 8 GiB 从正常输出目录生成图、完整编译并验证镜像。诊断产物保留两组 Soong 指标和 CPU profile；
-对比图生成耗时、GC CPU 和内存压力，不使用两个构建步骤的总耗时直接相减。第二组可能受益于已预热的文件缓存，
-单轮只能筛选方向。普通构建继续使用 6 GiB，不额外运行前端或收集 profile。
+[CI #16](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/44346927390)
+先测 6 GiB、后测 8 GiB，Soong 图生成耗时为 5:45 / 4:44；后跑的一组可能受益于预热。
+`compare_soong_memory=true` 现先以 8 GiB、再以 6 GiB 从独立输出目录生成构建图，
+最后以 8 GiB 完整编译并验证镜像。两组指标和 CPU profile 均在完整编译前保存；对比图生成耗时、
+GC CPU 和内存压力，不直接比较诊断阶段和完整构建的总耗时。普通构建仍使用 6 GiB。
 
 ## YARP 已验证范围
 

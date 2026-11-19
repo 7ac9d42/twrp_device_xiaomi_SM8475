@@ -29,8 +29,8 @@ def summarize(logs, source):
     ]
     if os.environ.get("COMPARE_SOONG_MEMORY") == "true":
         lines += [
-            "Soong 内存对照：6 GiB 仅生成构建图，8 GiB 完成编译和镜像验证。"
-            "请比较两组 Soong 图生成指标和 CPU profile，不直接比较两个阶段总耗时。",
+            "Soong 内存对照：先以 8 GiB、再以 6 GiB 从独立输出目录生成构建图，"
+            "最后以 8 GiB 完成编译和镜像验证。请比较两组 Soong 图生成指标和 CPU profile。"
             "",
         ]
     lines += ["| 阶段 | 耗时 | 结果 |", "| --- | --- | --- |"]

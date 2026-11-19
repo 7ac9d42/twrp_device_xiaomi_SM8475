@@ -12,7 +12,7 @@ on:
         type: boolean
         default: false
       compare_soong_memory:
-        description: Profile the 6 GiB frontend and verify a full build at 8 GiB
+        description: Profile 8 GiB before 6 GiB, then build and verify at 8 GiB
         type: boolean
         default: false
 
@@ -248,18 +248,20 @@ jobs:
           build_script="$SOURCE_ROOT/device/xiaomi/liuqin/tools/build.sh"
           printf 'Linux host Rust opt-level=1 requested: %s\n' "$LIUQIN_FAST_HOST_RUST"
           if [[ "$COMPARE_SOONG_MEMORY" == true ]]; then
+            export SOONG_GOMEMLIMIT=8GiB SOONG_PROFILE_CPU="$RUNNER_TEMP/yarp-soong-8g.cpu"
+            bash tools/ci/run-stage.sh soong-8g bash "$build_script" --frontend-only
+            test -s "$SOONG_PROFILE_CPU.build"
+            cp -- "$SOONG_PROFILE_CPU.build" "$CI_LOG_DIR/soong-8g.cpu.build"
+            cp -- "$SOURCE_ROOT/out/soong_build_metrics.pb" "$CI_LOG_DIR/soong-8g-metrics.pb"
+
             baseline_out=$(mktemp -d "$RUNNER_TEMP/yarp-soong-6g.XXXXXX")
-            OUT_DIR="$baseline_out" SOONG_PROFILE_CPU="$CI_LOG_DIR/soong-6g.cpu" \
+            OUT_DIR="$baseline_out" SOONG_GOMEMLIMIT=6GiB SOONG_PROFILE_CPU="$CI_LOG_DIR/soong-6g.cpu" \
               bash tools/ci/run-stage.sh soong-6g bash "$build_script" --frontend-only
-            cp -- "$baseline_out/soong_build_metrics.pb" "$CI_LOG_DIR/soong-6g-metrics.pb"
             test -s "$CI_LOG_DIR/soong-6g.cpu.build"
-            export SOONG_GOMEMLIMIT=8GiB SOONG_PROFILE_CPU="$CI_LOG_DIR/soong-8g.cpu"
+            cp -- "$baseline_out/soong_build_metrics.pb" "$CI_LOG_DIR/soong-6g-metrics.pb"
           fi
           printf 'Soong Go memory target: %s\n' "$SOONG_GOMEMLIMIT"
           bash tools/ci/run-stage.sh build bash "$build_script"
-          if [[ "$COMPARE_SOONG_MEMORY" == true ]]; then
-            test -s "$CI_LOG_DIR/soong-8g.cpu.build"
-          fi
 
       - name: Verify the final image
         id: verify
