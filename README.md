@@ -28,7 +28,7 @@ gh workflow run build.yml --repo 7ac9d42/twrp_device_xiaomi_SM8475 --ref main
 
 构建使用标准 GitHub-hosted `ubuntu-24.04`、锁定 manifest、浅同步和 clang sparse checkout。
 固定 repo v2.71，同步网络并发为 16、checkout 并发为 4，Soong 前端并发为 4、最终 Ninja 后端并发为 6；
-Soong Go 内存目标 6 GiB，swap 总计约 8 GiB。
+Soong Go 内存目标 8 GiB，swap 总计约 8 GiB。
 clang 与 Rust 先取浅层元数据、配置 sparse，再和其余项目共用一个 checkout 池；
 保留主 clang、bindgen clang 及当前 Rust，排除 Rust 的 Darwin、Windows 和旧 Linux 版本。
 通过 Actions cache 在同步前恢复最多 5 GiB 的 ccache；编译前仍要求至少 25 GiB 可用空间。
@@ -169,13 +169,14 @@ Rust、链接和生成步骤也不受 C/C++ ccache 全命中覆盖。因此不�
 验收用同一提交、相同缓存命中状态交替运行两种模式，核对代表性宿主与 Android Rust 命令的最终参数，
 比较宿主生成工具及其下游动作、完整编译和 job 总耗时，同时要求镜像检查通过。
 
-### Soong 前端内存对照（默认关闭）
+### Soong 前端内存实测
 
 [CI #16](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/44346927390)
-先测 6 GiB、后测 8 GiB，Soong 图生成耗时为 5:45 / 4:44；后跑的一组可能受益于预热。
-`compare_soong_memory=true` 现先以 8 GiB、再以 6 GiB 从独立输出目录生成构建图，
-最后以 8 GiB 完整编译并验证镜像。两组指标和 CPU profile 均在完整编译前保存；对比图生成耗时、
-GC CPU 和内存压力，不直接比较诊断阶段和完整构建的总耗时。普通构建仍使用 6 GiB。
+先测 6 GiB、后测 8 GiB，Soong 图生成耗时为 5:45 / 4:44；
+[CI #17](https://github.com/7ac9d42/twrp_device_xiaomi_SM8475/actions/runs/44458662168)
+反向运行，8 GiB 先跑仍比 6 GiB 快 44 秒（4:42 / 5:27），GC 采样 CPU 时间从 685 秒降至 596 秒，
+未观察到内存压力增加。两轮的 8 GiB 完整构建和镜像检查均通过。
+正式默认采用 8 GiB，移除双跑与专项 profile；这里的 44–61 秒是图生成实测收益，不是整个 job 的净提速。
 
 ## YARP 已验证范围
 

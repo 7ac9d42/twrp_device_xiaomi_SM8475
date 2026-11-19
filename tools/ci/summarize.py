@@ -26,14 +26,9 @@ def summarize(logs, source):
         f"Soong Go 默认内存目标 {os.environ.get('SOONG_GOMEMLIMIT', '?')}；"
         f"ccache 上限 {os.environ.get('CCACHE_MAX_SIZE', '?')}。",
         "",
+        "| 阶段 | 耗时 | 结果 |",
+        "| --- | --- | --- |",
     ]
-    if os.environ.get("COMPARE_SOONG_MEMORY") == "true":
-        lines += [
-            "Soong 内存对照：先以 8 GiB、再以 6 GiB 从独立输出目录生成构建图，"
-            "最后以 8 GiB 完成编译和镜像验证。请比较两组 Soong 图生成指标和 CPU profile。"
-            "",
-        ]
-    lines += ["| 阶段 | 耗时 | 结果 |", "| --- | --- | --- |"]
     timings = []
     for path in sorted(logs.glob("*/timing.json")) + sorted(logs.glob("cache-*.json")):
         try:

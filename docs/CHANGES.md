@@ -29,7 +29,8 @@
 - 固定经核对的 YARP 官方依赖及 LVGL/GUI2 资源，使用上游已修复的模块加载通知顺序；更新策略见 UPSTREAM。
 - 提供标准 Ubuntu 24.04 hosted runner 的手动 CI，限制并发和内存目标，检查磁盘余量并设置阶段超时。
 - 从已测镜像按完整 SHA-256 恢复厂商载荷，保留原始固件提取方式。
-- 固定 repo v2.71，同步网络默认 16 并发、checkout 默认 4 并发，取消独立串行 clang checkout；Soong 前端为 4 并发、最终 Ninja 后端为 6 并发，保留 6 GiB Soong Go 内存目标和约 8 GiB swap。
+- 固定 repo v2.71，同步网络默认 16 并发、checkout 默认 4 并发，取消独立串行 clang checkout；Soong 前端为 4 并发、最终 Ninja 后端为 6 并发，保留约 8 GiB swap。
+- CI #16/#17 交换顺序实测后，将 Soong Go 内存目标从 6 GiB 调至 8 GiB；图生成少用 44–61 秒，两轮均通过完整构建和镜像验证。移除临时对照入口及专项 profile，保留常规构建诊断。
 - clang 使用显式根目录选集，Rust 排除其他宿主平台和旧 Linux 工具链版本；同步前核对选集覆盖上游声明的工具链版本。
 - 在源码同步前恢复跨运行 ccache，上限 5 GiB，位于沙箱可写的 `out/ccache`；保留同平台内容校验回退，并区分历史缓存恢复和本轮内部命中。
 - 单独缓存精确提交的 clang Git 对象库，上限 3 GiB；不整体缓存源码、`.repo` 或构建输出。恢复失败或未命中时隔离不完整对象库，避免阻塞冷同步。
